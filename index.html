@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقييم التشابه البصري</title>
+<style>
+  :root {
+    --navy: #1B3A6B;
+    --navy-dark: #0D1F3C;
+    --green: #2ECC71;
+    --amber: #F1C40F;
+    --red: #E74C3C;
+    --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: white;
+  }
+  .container {
+    max-width: 720px;
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border-radius: 20px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: #A8C4E8; }
+  .progress-bar {
+    width: 100%; height: 8px; background: rgba(255,255,255,0.1);
+    border-radius: 8px; overflow: hidden; margin: 20px 0;
+  }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 8px; transition: width 0.4s ease; }
+  .progress-text { text-align: center; font-size: 13px; color: #A8C4E8; margin-bottom: 20px; }
+  .query-section { text-align: center; margin-bottom: 24px; }
+  .query-label { font-size: 13px; color: #A8C4E8; margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+  .query-img {
+    width: 160px; height: 160px; border-radius: 16px; object-fit: cover;
+    border: 3px solid #E8700A; box-shadow: 0 8px 24px rgba(232,112,10,0.3);
+  }
+  .question-text { text-align: center; font-size: 17px; font-weight: 600; margin: 20px 0; color: white; }
+  .options-row { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; }
+  .option-card {
+    flex: 1; max-width: 220px; background: rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 12px; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.2s ease; text-align: center;
+  }
+  .option-card:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .option-card.selected { border-color: var(--green); background: rgba(46,204,113,0.15); }
+  .option-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
+  .option-label { font-weight: 700; font-size: 16px; color: white; }
+  .neither-btn {
+    display: block; width: 100%; max-width: 300px; margin: 0 auto 20px; padding: 14px;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px; color: #A8C4E8; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .neither-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+  .neither-btn.selected { border-color: var(--amber); background: rgba(241,196,15,0.15); color: var(--amber); }
+  .next-btn {
+    display: block; width: 100%; padding: 16px; background: var(--green); border: none;
+    border-radius: 12px; color: var(--navy-dark); font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s ease; opacity: 0.4; pointer-events: none;
+  }
+  .next-btn.enabled { opacity: 1; pointer-events: auto; }
+  .next-btn.enabled:hover { background: #27AE60; transform: translateY(-1px); }
+  .next-btn:disabled { opacity: 0.6; pointer-events: none; }
+  .loading, .thank-you { text-align: center; padding: 60px 20px; }
+  .loading .spinner {
+    width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2);
+    border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .thank-you h2 { font-size: 26px; margin-bottom: 14px; }
+  .thank-you p { font-size: 15px; color: #A8C4E8; line-height: 1.8; margin-bottom: 24px; }
+  .thank-you .checkmark { font-size: 56px; margin-bottom: 16px; }
+  .continue-btn {
+    padding: 14px 32px; background: rgba(255,255,255,0.08); border: 2px solid var(--green);
+    border-radius: 12px; color: var(--green); font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .continue-btn:hover { background: rgba(46,204,113,0.15); }
+  .no-more-note { font-size: 13px; color: #A8C4E8; margin-top: 16px; }
+  .intro-screen { text-align: center; padding: 20px 0; }
+  .intro-screen h2 { font-size: 20px; margin-bottom: 16px; }
+  .intro-screen p { font-size: 14px; color: #A8C4E8; line-height: 1.9; margin-bottom: 20px; }
+  .start-btn {
+    padding: 16px 40px; background: var(--green); border: none; border-radius: 12px;
+    color: var(--navy-dark); font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .start-btn:hover { background: #27AE60; }
+  .sending-note { text-align:center; font-size:12px; color:#6b8fc7; margin-top:8px; height:16px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="loading" id="loadingScreen">
+    <div class="spinner"></div>
+    <p>...جارٍ التحميل</p>
+  </div>
+</div>
+
+<script>
+const ALL_QUESTIONS = [{"question_id":"q001","query_image":"182449.jpg","option_a_image":"084075.jpg","option_b_image":"099455.jpg","correct_side":"A","model_score":0.7681,"query_url":"https://lh3.googleusercontent.com/d/1a5qWFfdrSiqetao900jQyqsqAm8Jv96f","option_a_url":"https://lh3.googleusercontent.com/d/1v4wylumfyC94pGuUEhWQ6bQottSj13mv","option_b_url":"https://lh3.googleusercontent.com/d/1AL8a3V6Z03VadFD6paTdH-SvJmvbp72Y"},{"question_id":"q002","query_image":"021493.jpg","option_a_image":"059445.jpg","option_b_image":"029252.jpg","correct_side":"B","model_score":0.6782,"query_url":"https://lh3.googleusercontent.com/d/1jeWxnJaaNujL_4xjdr1VWe77E708ltSn","option_a_url":"https://lh3.googleusercontent.com/d/1JrUy24A3N0z2Kh-KQ0OhZtF0vIFBfZ2f","option_b_url":"https://lh3.googleusercontent.com/d/1qAmtaJ8Yi9srSS0fF80TYaQ0aTOj329e"},{"question_id":"q003","query_image":"152581.jpg","option_a_image":"151276.jpg","option_b_image":"176653.jpg","correct_side":"A","model_score":0.7758,"query_url":"https://lh3.googleusercontent.com/d/1qYjOGyicahLwG1Zs8TzeAlA_rn2IR6pF","option_a_url":"https://lh3.googleusercontent.com/d/1kCnV3TbTPZ8NZsDRg54JgM37Z5AiQtxl","option_b_url":"https://lh3.googleusercontent.com/d/1OAWLhRIpwjVc-_W6m4jiLfnc26_bK7Xf"},{"question_id":"q004","query_image":"154192.jpg","option_a_image":"199522.jpg","option_b_image":"145638.jpg","correct_side":"A","model_score":0.5264,"query_url":"https://lh3.googleusercontent.com/d/1gePiw1gyBJhFM8ecyea8mFjgPNEfVI8E","option_a_url":"https://lh3.googleusercontent.com/d/1tFWEHEnrNH6d9MMgUhUvE6uhGyW4dISd","option_b_url":"https://lh3.googleusercontent.com/d/1F1PHB4DDHo6-HrkOlY7sFSGqKx9L5Z-g"},{"question_id":"q005","query_image":"143413.jpg","option_a_image":"009800.jpg","option_b_image":"021064.jpg","correct_side":"B","model_score":0.6953,"query_url":"https://lh3.googleusercontent.com/d/1scO0eMix0JHLHFR5d9J-C2zNeL4W1u23","option_a_url":"https://lh3.googleusercontent.com/d/1uReCRJvw4oSL63t-N3E_u1_AruDoe4dH","option_b_url":"https://lh3.googleusercontent.com/d/19m5GB2nx9TguYD7XZAeI6M-tT7LlaClT"},{"question_id":"q006","query_image":"131833.jpg","option_a_image":"095105.jpg","option_b_image":"181777.jpg","correct_side":"B","model_score":0.7023,"query_url":"https://lh3.googleusercontent.com/d/1s8Tjp3K7M5k6lepVyrpWAf3DKcmlK48F","option_a_url":"https://lh3.googleusercontent.com/d/1Haidnf5oqT8xyen0BgdF_LQBWiUDHV63","option_b_url":"https://lh3.googleusercontent.com/d/1Dbq3ikTmJcDvLpSK5oSQK7XaCDb_DIL4"},{"question_id":"q007","query_image":"129904.jpg","option_a_image":"182466.jpg","option_b_image":"060011.jpg","correct_side":"A","model_score":0.6507,"query_url":"https://lh3.googleusercontent.com/d/12ZV-Od2KsULqQO6UhRyRqNecUOJR-hAF","option_a_url":"https://lh3.googleusercontent.com/d/1jvxOHry1bkjcpmy6kmAHUi--9iqorujA","option_b_url":"https://lh3.googleusercontent.com/d/18gAjlSt8vIK6yt8NJ5uyXtvmE0hCPZBg"},{"question_id":"q008","query_image":"035470.jpg","option_a_image":"063276.jpg","option_b_image":"018552.jpg","correct_side":"A","model_score":0.7698,"query_url":"https://lh3.googleusercontent.com/d/1n5-MAX-tT1gLFG9FJDWcUg3-RJKISbU2","option_a_url":"https://lh3.googleusercontent.com/d/1M3QFEeKfmVl-2soN5OazoLbcjPObWVv6","option_b_url":"https://lh3.googleusercontent.com/d/1dcJQ3RVCbhodDVHtQwuvSMf0XET6XV6t"},{"question_id":"q009","query_image":"173994.jpg","option_a_image":"121588.jpg","option_b_image":"166396.jpg","correct_side":"A","model_score":0.7632,"query_url":"https://lh3.googleusercontent.com/d/1wTx8hUwfcwkkO12JCv6sNbqk63CSzkYX","option_a_url":"https://lh3.googleusercontent.com/d/1J5Pjz79Yxf_KIsltj-dEpUmQyjWdEtiv","option_b_url":"https://lh3.googleusercontent.com/d/1uFxaS5azUW3wbtboSjBRiSOM09e3V_6A"},{"question_id":"q010","query_image":"085470.jpg","option_a_image":"179924.jpg","option_b_image":"006708.jpg","correct_side":"B","model_score":0.7225,"query_url":"https://lh3.googleusercontent.com/d/1tFmdSfz_98lHFs57beDQsLiaF_LJm7Se","option_a_url":"https://lh3.googleusercontent.com/d/1z5m39fJbZJHzlQB9LqaW7dt32Gas3Yzz","option_b_url":"https://lh3.googleusercontent.com/d/1-oC05bFRppIK-2hVhU8_X_njd8gfG-mY"},{"question_id":"q011","query_image":"172997.jpg","option_a_image":"032099.jpg","option_b_image":"080762.jpg","correct_side":"A","model_score":0.8172,"query_url":"https://lh3.googleusercontent.com/d/19lKuG7PJoIkOeWbh4BEW213FvnPV_tLe","option_a_url":"https://lh3.googleusercontent.com/d/1MoMW6IoAMnIh6ZztwJqQjf_RRhXk_C_a","option_b_url":"https://lh3.googleusercontent.com/d/1oPEVtnEwk2_qqWzT_qd-EUc0tQzGQyzj"},{"question_id":"q012","query_image":"172695.jpg","option_a_image":"116688.jpg","option_b_image":"179924.jpg","correct_side":"B","model_score":0.7349,"query_url":"https://lh3.googleusercontent.com/d/1s74dQ4UkCf7Z2XIZ8OeA1qITwIBGP-MO","option_a_url":"https://lh3.googleusercontent.com/d/1YVXO_7e5sy7i60zdlIpRpI3IGlf8Ad6J","option_b_url":"https://lh3.googleusercontent.com/d/1z5m39fJbZJHzlQB9LqaW7dt32Gas3Yzz"},{"question_id":"q013","query_image":"026160.jpg","option_a_image":"152237.jpg","option_b_image":"060011.jpg","correct_side":"B","model_score":0.6315,"query_url":"https://lh3.googleusercontent.com/d/1gimg1QEFndxs2TAZuYUfyeiIhRFspWyn","option_a_url":"https://lh3.googleusercontent.com/d/17LrhySPPnCn5L-oe8snROjglJz7sAvUw","option_b_url":"https://lh3.googleusercontent.com/d/18gAjlSt8vIK6yt8NJ5uyXtvmE0hCPZBg"},{"question_id":"q014","query_image":"173494.jpg","option_a_image":"020479.jpg","option_b_image":"160038.jpg","correct_side":"A","model_score":0.6896,"query_url":"https://lh3.googleusercontent.com/d/1Fcrv2rRN3mMvX7xmqnc1x6xW3lBj-VMq","option_a_url":"https://lh3.googleusercontent.com/d/1WGafqGOa4AmGez9b4yTgf7cuNBjZmpS2","option_b_url":"https://lh3.googleusercontent.com/d/17ly-A9RukTXjoRIAS5YruSAptvebYcqA"},{"question_id":"q015","query_image":"050501.jpg","option_a_image":"086659.jpg","option_b_image":"064450.jpg","correct_side":"A","model_score":0.6486,"query_url":"https://lh3.googleusercontent.com/d/1HFilRq2MZWbkyQeCmsm8EQrqPbDzk5iY","option_a_url":"https://lh3.googleusercontent.com/d/1B4G_4Pv82znWqCPaQCtzQpxNtnN21q28","option_b_url":"https://lh3.googleusercontent.com/d/1QFkocixy9dxLzHnDcTULciJaB_saYjua"},{"question_id":"q016","query_image":"040079.jpg","option_a_image":"013387.jpg","option_b_image":"176233.jpg","correct_side":"B","model_score":0.742,"query_url":"https://lh3.googleusercontent.com/d/1bhfk053D3fLZ27WWJ14GxbJEI-Bxg1C2","option_a_url":"https://lh3.googleusercontent.com/d/1FPoqwF0TaMaZJCQ44pk8yJAiD1NUH0qX","option_b_url":"https://lh3.googleusercontent.com/d/1OYXI-BgJJXFlXBU1MseKFD0JdVh9XSRS"},{"question_id":"q017","query_image":"071056.jpg","option_a_image":"107400.jpg","option_b_image":"137710.jpg","correct_side":"A","model_score":0.7304,"query_url":"https://lh3.googleusercontent.com/d/1Y28K0gwgxiWVY7svrrD2WsMguKCEU-Ja","option_a_url":"https://lh3.googleusercontent.com/d/1j3Li2He2BES3nfvVHUoCe03gSI_b25Db","option_b_url":"https://lh3.googleusercontent.com/d/1Dbi0zqM0Mhr0P5EleKtCyphZOmKBW4iE"},{"question_id":"q018","query_image":"153431.jpg","option_a_image":"172324.jpg","option_b_image":"095105.jpg","correct_side":"B","model_score":0.7729,"query_url":"https://lh3.googleusercontent.com/d/1ruPBOLya_Ah4iKgroThxbJlfHCKjo0gz","option_a_url":"https://lh3.googleusercontent.com/d/18rcONTwx67kOakdKBvKMZd79p98vauU4","option_b_url":"https://lh3.googleusercontent.com/d/1Haidnf5oqT8xyen0BgdF_LQBWiUDHV63"},{"question_id":"q019","query_image":"014239.jpg","option_a_image":"109705.jpg","option_b_image":"140001.jpg","correct_side":"A","model_score":0.8398,"query_url":"https://lh3.googleusercontent.com/d/19sZ2j0-8NQfl6116W1XMrD2BGg7rgep2","option_a_url":"https://lh3.googleusercontent.com/d/1OleVsY1DmoKrpobFFBhI1P6bjGzo7lts","option_b_url":"https://lh3.googleusercontent.com/d/1MzidbiuWZWK4Hu9va_doCa5mEo4elDyd"},{"question_id":"q020","query_image":"188709.jpg","option_a_image":"092111.jpg","option_b_image":"179535.jpg","correct_side":"A","model_score":0.7227,"query_url":"https://lh3.googleusercontent.com/d/1srCbMdvgvHEkDBcE8WAs1aIOi1u4etxs","option_a_url":"https://lh3.googleusercontent.com/d/1eUNy-9ljQsZ_t1jT8IuP1lJfgEVRWPQC","option_b_url":"https://lh3.googleusercontent.com/d/11O3QwUEy-5AhC2QTl1-UsJ99opF5uajP"},{"question_id":"q021","query_image":"068125.jpg","option_a_image":"021064.jpg","option_b_image":"023928.jpg","correct_side":"B","model_score":0.7124,"query_url":"https://lh3.googleusercontent.com/d/1OSJ1kRdt_ZXNlYrqVAUu--inCKogsVsa","option_a_url":"https://lh3.googleusercontent.com/d/19m5GB2nx9TguYD7XZAeI6M-tT7LlaClT","option_b_url":"https://lh3.googleusercontent.com/d/1OMkUnqDEqlpibyQ-t8jSZWyIViAqonoL"},{"question_id":"q022","query_image":"106959.jpg","option_a_image":"013540.jpg","option_b_image":"080661.jpg","correct_side":"B","model_score":0.7258,"query_url":"https://lh3.googleusercontent.com/d/1q0zuCuUGOlMJemFhZjJ8Q8Xf6Zp5oXku","option_a_url":"https://lh3.googleusercontent.com/d/1uq12g55UJfK3eYxrjIsgryH7hEmSdrgH","option_b_url":"https://lh3.googleusercontent.com/d/1BJteDtQskwvx1JUppf-07CXDQRw1ucSB"},{"question_id":"q023","query_image":"060875.jpg","option_a_image":"154707.jpg","option_b_image":"142040.jpg","correct_side":"B","model_score":0.75,"query_url":"https://lh3.googleusercontent.com/d/1GxN2Ub1iREzb1ObOjAt_qkq9L_rfx9xF","option_a_url":"https://lh3.googleusercontent.com/d/1EbUtqYziVwVjnmfXjp-_vgGZMZslR0OW","option_b_url":"https://lh3.googleusercontent.com/d/1yObLsehAum9Cu4U-qC8qVM1CWhOlnlzU"},{"question_id":"q024","query_image":"169650.jpg","option_a_image":"150168.jpg","option_b_image":"108851.jpg","correct_side":"A","model_score":0.741,"query_url":"https://lh3.googleusercontent.com/d/1M-8LQdNvJvv3_vs-siB0bOgWf-ft0_ye","option_a_url":"https://lh3.googleusercontent.com/d/1zMBAwwY-oEDGlNKuRQKKlVbfAtpy5G98","option_b_url":"https://lh3.googleusercontent.com/d/1IYtQWnFWyet3p0g26WPXdauQhyk6b6ir"},{"question_id":"q025","query_image":"108111.jpg","option_a_image":"146976.jpg","option_b_image":"127346.jpg","correct_side":"B","model_score":0.6632,"query_url":"https://lh3.googleusercontent.com/d/102-bQhrJgwGLogFVOGmY-6edjJcoEOSj","option_a_url":"https://lh3.googleusercontent.com/d/1uJxndEwurFNjcTlzFW1a6WUuqwANnFhy","option_b_url":"https://lh3.googleusercontent.com/d/1p3-DthtmcAUJyFZ-t1NKV8-OqariBciC"},{"question_id":"q026","query_image":"020085.jpg","option_a_image":"129399.jpg","option_b_image":"001830.jpg","correct_side":"A","model_score":0.71,"query_url":"https://lh3.googleusercontent.com/d/1RedxYsAIY59JrJ8hZQ0AxJtw0imHr70a","option_a_url":"https://lh3.googleusercontent.com/d/1hOSzWyoFw5LKhb0jmFudzGS-Y2Ok8Tc2","option_b_url":"https://lh3.googleusercontent.com/d/1q2d4ioVGDOPio2_fx_uWz9oeJ2oaQ6ik"},{"question_id":"q027","query_image":"072465.jpg","option_a_image":"044831.jpg","option_b_image":"074654.jpg","correct_side":"A","model_score":0.7616,"query_url":"https://lh3.googleusercontent.com/d/1ARnOTRiiSsd85R63_QMnwCq4jBE3nWol","option_a_url":"https://lh3.googleusercontent.com/d/1oP5It4XsbygOOai_483d__B1EQ9MIcM3","option_b_url":"https://lh3.googleusercontent.com/d/1QbrpUH1opcXW-GKqg00YWMhXQszDKYvs"},{"question_id":"q028","query_image":"006281.jpg","option_a_image":"033690.jpg","option_b_image":"199907.jpg","correct_side":"A","model_score":0.6298,"query_url":"https://lh3.googleusercontent.com/d/1KnYjB7pzwCHTV6OBT9K2EjAovUoTsLbg","option_a_url":"https://lh3.googleusercontent.com/d/1lhHa2vJMGfsUvOhcCUTiDfls7YMiKjZM","option_b_url":"https://lh3.googleusercontent.com/d/1rZ0Zz-Ta5gqlRCKxM823QUHNbw5naOTE"},{"question_id":"q029","query_image":"053751.jpg","option_a_image":"083271.jpg","option_b_image":"017871.jpg","correct_side":"B","model_score":0.6577,"query_url":"https://lh3.googleusercontent.com/d/1fiODdjYQZ_73WdhdB7q6EYhOoTdLIMrF","option_a_url":"https://lh3.googleusercontent.com/d/1jAAgVFbC3bmGwN8ghq1gLOZ3VrZgHx4J","option_b_url":"https://lh3.googleusercontent.com/d/1mPrY4DQEvb3ym0dwWv8MJlz9k1tZpQMS"},{"question_id":"q030","query_image":"172576.jpg","option_a_image":"031629.jpg","option_b_image":"078768.jpg","correct_side":"A","model_score":0.7657,"query_url":"https://lh3.googleusercontent.com/d/1yTgboPDtu5afHtjucQu98NZNOjG3FCcJ","option_a_url":"https://lh3.googleusercontent.com/d/14-dcYb1g7PBIUkmx2ft6Ecrntd9fU8FF","option_b_url":"https://lh3.googleusercontent.com/d/1uF1fy07x1Xj91MijEIlRoo6Idw07PR-h"},{"question_id":"q031","query_image":"134428.jpg","option_a_image":"144653.jpg","option_b_image":"142040.jpg","correct_side":"B","model_score":0.7627,"query_url":"https://lh3.googleusercontent.com/d/1hTvgavWhTtg9sN8nwbE038O4UhYppc9y","option_a_url":"https://lh3.googleusercontent.com/d/1GisWdmgJeu9pAL3C1dNUpzvQ8_j2iGP0","option_b_url":"https://lh3.googleusercontent.com/d/1yObLsehAum9Cu4U-qC8qVM1CWhOlnlzU"},{"question_id":"q032","query_image":"055955.jpg","option_a_image":"025300.jpg","option_b_image":"166915.jpg","correct_side":"A","model_score":0.6404,"query_url":"https://lh3.googleusercontent.com/d/1gKd3xtXCH5kkl1VnXZnn4VaTATbH0aiN","option_a_url":"https://lh3.googleusercontent.com/d/1t1uLXzJX_xwJB6HpIidG4s1NotN85MJc","option_b_url":"https://lh3.googleusercontent.com/d/1SR8MZCg2UbX9rZpaRijadQ8wtELxNhh7"},{"question_id":"q033","query_image":"050046.jpg","option_a_image":"022096.jpg","option_b_image":"074919.jpg","correct_side":"A","model_score":0.5549,"query_url":"https://lh3.googleusercontent.com/d/1IBlrkOdWTAauRp0jLpbsqJlWqQeK0A5e","option_a_url":"https://lh3.googleusercontent.com/d/18Q-2MT7HYFW9oDfSbevGxJmnUYWhRUeA","option_b_url":"https://lh3.googleusercontent.com/d/1uUX2PplCwhzsyPicXSmD3hhAfiL9j4Cp"},{"question_id":"q034","query_image":"181435.jpg","option_a_image":"056765.jpg","option_b_image":"013540.jpg","correct_side":"A","model_score":0.6621,"query_url":"https://lh3.googleusercontent.com/d/1xZ-XK1NfqMLGOMx7B1PSi3Z7aXy9XU1l","option_a_url":"https://lh3.googleusercontent.com/d/1kWb5i-3YA1frKR_hJqpLtia81GfKcsiu","option_b_url":"https://lh3.googleusercontent.com/d/1uq12g55UJfK3eYxrjIsgryH7hEmSdrgH"},{"question_id":"q035","query_image":"088868.jpg","option_a_image":"104421.jpg","option_b_image":"180907.jpg","correct_side":"B","model_score":0.6441,"query_url":"https://lh3.googleusercontent.com/d/11iNco9GIHj28-DMRpCmsVlNJTNQAu8xl","option_a_url":"https://lh3.googleusercontent.com/d/1FixGpWHVrDF8Pa_HHXEilA2vIeMg4ATm","option_b_url":"https://lh3.googleusercontent.com/d/1SMIy7F27hHunrQnxlOC9V3WuTjoQXJ-O"},{"question_id":"q036","query_image":"044313.jpg","option_a_image":"064990.jpg","option_b_image":"001477.jpg","correct_side":"B","model_score":0.75,"query_url":"https://lh3.googleusercontent.com/d/1ipmd-uLyhYPvOyH8pVhKMFLmloYhHebk","option_a_url":"https://lh3.googleusercontent.com/d/1cniYOAuECeUVuKGS5cFTz7FCecfQHhi3","option_b_url":"https://lh3.googleusercontent.com/d/1qlG5rlcfvo_fyh-bh3pX0LVEbcPiUXmV"},{"question_id":"q037","query_image":"023211.jpg","option_a_image":"137057.jpg","option_b_image":"134957.jpg","correct_side":"A","model_score":0.5784,"query_url":"https://lh3.googleusercontent.com/d/1N5UAnM21q_pb6Zyns4nVpvoQ6we5LUvM","option_a_url":"https://lh3.googleusercontent.com/d/1Neg9JYvtvWIWB2R7gw3qVsAH5Vq_RuAr","option_b_url":"https://lh3.googleusercontent.com/d/1ztKXdyDJNIZbBZf2R5IZo4MemoLiKFw-"},{"question_id":"q038","query_image":"148277.jpg","option_a_image":"164763.jpg","option_b_image":"027560.jpg","correct_side":"B","model_score":0.7682,"query_url":"https://lh3.googleusercontent.com/d/1i0Nhq57OwVwoDMVBbobpXPteQ-ee1LUl","option_a_url":"https://lh3.googleusercontent.com/d/11krQaQjMPJirRkUvEqQtBSql6Vcp66Pf","option_b_url":"https://lh3.googleusercontent.com/d/1ZzxX4OiW9Lxn77hwUUCk_RQZRD09zi4h"},{"question_id":"q039","query_image":"125305.jpg","option_a_image":"201683.jpg","option_b_image":"059445.jpg","correct_side":"A","model_score":0.7965,"query_url":"https://lh3.googleusercontent.com/d/1HH6ZGGthZyuYrlwqWln4ew8DwE1sAN-c","option_a_url":"https://lh3.googleusercontent.com/d/17nP9A4lYj-hsJsD4dxWVrngunPLPCt_T","option_b_url":"https://lh3.googleusercontent.com/d/1JrUy24A3N0z2Kh-KQ0OhZtF0vIFBfZ2f"},{"question_id":"q040","query_image":"187155.jpg","option_a_image":"032099.jpg","option_b_image":"012137.jpg","correct_side":"A","model_score":0.7758,"query_url":"https://lh3.googleusercontent.com/d/1gSkNJMLjARYr06n0A5iRg8ujnYWgCsVN","option_a_url":"https://lh3.googleusercontent.com/d/1MoMW6IoAMnIh6ZztwJqQjf_RRhXk_C_a","option_b_url":"https://lh3.googleusercontent.com/d/1KUMjSNkew-G7IQIV34s3GQ--B0_gURVm"},{"question_id":"q041","query_image":"200093.jpg","option_a_image":"019491.jpg","option_b_image":"196628.jpg","correct_side":"B","model_score":0.7158,"query_url":"https://lh3.googleusercontent.com/d/1N30rElOGtvyqg9h-Zs371J528ug9eFvU","option_a_url":"https://lh3.googleusercontent.com/d/1c0EnSQgZrxhamPqseh84ZkwIoZ5aVnnv","option_b_url":"https://lh3.googleusercontent.com/d/1ctFZDgvlFy3khgVPYj9CF18pzkOV2G7J"},{"question_id":"q042","query_image":"098921.jpg","option_a_image":"181233.jpg","option_b_image":"180158.jpg","correct_side":"A","model_score":0.6552,"query_url":"https://lh3.googleusercontent.com/d/1jUZp0vjikDMawJhmIKrNYTWw0zo-mkQv","option_a_url":"https://lh3.googleusercontent.com/d/1PAYzC1t3oPfrJxzWSc02yDSlledBK084","option_b_url":"https://lh3.googleusercontent.com/d/1DXbAfW5HdrkOCmkwv3-hzTSV3iXKYRBn"},{"question_id":"q043","query_image":"034837.jpg","option_a_image":"024369.jpg","option_b_image":"014045.jpg","correct_side":"B","model_score":0.7317,"query_url":"https://lh3.googleusercontent.com/d/1jgz236klJvUz4tYl6UnWAv7KvuY7RXZV","option_a_url":"https://lh3.googleusercontent.com/d/11-ii4eYSFdf49uTb3pNO7E8Lo-ahTcOE","option_b_url":"https://lh3.googleusercontent.com/d/1weXh_1knHl-gRGX4icyGkRS6-gBZrpBz"},{"question_id":"q044","query_image":"177692.jpg","option_a_image":"196037.jpg","option_b_image":"065359.jpg","correct_side":"A","model_score":0.7604,"query_url":"https://lh3.googleusercontent.com/d/1wlMH-pSjJnfh3C73OaMCKgEQnhQthLHQ","option_a_url":"https://lh3.googleusercontent.com/d/1KwYp9IVjkwGwwP28ptzr19w99444bCCp","option_b_url":"https://lh3.googleusercontent.com/d/1cGjHeZ0G9I8DYTckbZZuW8ZnCtdaQK-v"},{"question_id":"q045","query_image":"175629.jpg","option_a_image":"020805.jpg","option_b_image":"001477.jpg","correct_side":"B","model_score":0.6976,"query_url":"https://lh3.googleusercontent.com/d/1BE2ll8dWlylL_dBmQOy7sc23eIPtKH-K","option_a_url":"https://lh3.googleusercontent.com/d/1fj-SDa7f6Pd9z1xQSEzeA-B9LGmeqho0","option_b_url":"https://lh3.googleusercontent.com/d/1qlG5rlcfvo_fyh-bh3pX0LVEbcPiUXmV"},{"question_id":"q046","query_image":"134273.jpg","option_a_image":"144653.jpg","option_b_image":"010577.jpg","correct_side":"B","model_score":0.7612,"query_url":"https://lh3.googleusercontent.com/d/1P0kCUa12CzjnKPByWT8t3BxTFWruCBY0","option_a_url":"https://lh3.googleusercontent.com/d/1GisWdmgJeu9pAL3C1dNUpzvQ8_j2iGP0","option_b_url":"https://lh3.googleusercontent.com/d/1rwg_Q6LJm7xWxsphmBXOnwZbXHg6dZVH"},{"question_id":"q047","query_image":"124958.jpg","option_a_image":"075013.jpg","option_b_image":"009615.jpg","correct_side":"B","model_score":0.7443,"query_url":"https://lh3.googleusercontent.com/d/12ln4AjJ5-rijbEpIYXYKvHCGzQXzwaG4","option_a_url":"https://lh3.googleusercontent.com/d/1jR-tf0y9bQdWfkK3GehHIR1a71vZzwdH","option_b_url":"https://lh3.googleusercontent.com/d/1n8QVgHIXs8tT-hJ7d8DdczpAVxmB9tpo"},{"question_id":"q048","query_image":"003929.jpg","option_a_image":"144653.jpg","option_b_image":"013847.jpg","correct_side":"B","model_score":0.7424,"query_url":"https://lh3.googleusercontent.com/d/1yg9dyOL4J3tivmtjAlo_tP7H5neG7Di7","option_a_url":"https://lh3.googleusercontent.com/d/1GisWdmgJeu9pAL3C1dNUpzvQ8_j2iGP0","option_b_url":"https://lh3.googleusercontent.com/d/1Ca4N0UVEDVQ5rgU03b1GRf3FBHnyQN1M"},{"question_id":"q049","query_image":"201263.jpg","option_a_image":"180907.jpg","option_b_image":"031629.jpg","correct_side":"A","model_score":0.6557,"query_url":"https://lh3.googleusercontent.com/d/1XlU28IP6gf4mOvc7tcrsl8kvTwFBfywo","option_a_url":"https://lh3.googleusercontent.com/d/1SMIy7F27hHunrQnxlOC9V3WuTjoQXJ-O","option_b_url":"https://lh3.googleusercontent.com/d/14-dcYb1g7PBIUkmx2ft6Ecrntd9fU8FF"},{"question_id":"q050","query_image":"014758.jpg","option_a_image":"081975.jpg","option_b_image":"028534.jpg","correct_side":"A","model_score":0.7685,"query_url":"https://lh3.googleusercontent.com/d/1b97-RVYV6MMXH2fBrCyQ19POqwkIxXB8","option_a_url":"https://lh3.googleusercontent.com/d/1VuEcZuDRfV8R2OH3aLSb-q3P4hyz5LUy","option_b_url":"https://lh3.googleusercontent.com/d/1s9DdldII4yXWVe-J1NL2JUcwH5WjdFRU"},{"question_id":"q051","query_image":"065250.jpg","option_a_image":"109705.jpg","option_b_image":"108562.jpg","correct_side":"A","model_score":0.7622,"query_url":"https://lh3.googleusercontent.com/d/1_WE8RYG0oI95DDDaNz72YW6VgE1ZUVuE","option_a_url":"https://lh3.googleusercontent.com/d/1OleVsY1DmoKrpobFFBhI1P6bjGzo7lts","option_b_url":"https://lh3.googleusercontent.com/d/16tRdsl8YFVU4_CYesKUoN7V4FTNzZA-O"},{"question_id":"q052","query_image":"029916.jpg","option_a_image":"043980.jpg","option_b_image":"139548.jpg","correct_side":"B","model_score":0.8236,"query_url":"https://lh3.googleusercontent.com/d/1Eddl0s2UUwh-PH7IELIJZVSzeHK9R3Yl","option_a_url":"https://lh3.googleusercontent.com/d/1cJjvSggGc49ILnWcQaCR9ZvPpwPL_tlG","option_b_url":"https://lh3.googleusercontent.com/d/12srWq0RUuBD97OMky-OBokP7CncAy6c1"},{"question_id":"q053","query_image":"194180.jpg","option_a_image":"096076.jpg","option_b_image":"119498.jpg","correct_side":"B","model_score":0.743,"query_url":"https://lh3.googleusercontent.com/d/1ZnIqaUtOUjrbCk-KVZ21IzF_rfPUFGU_","option_a_url":"https://lh3.googleusercontent.com/d/10oWgj8jm2QldoLD-svHhwVqVnO91lOUk","option_b_url":"https://lh3.googleusercontent.com/d/1LJIaOn4QceQHu6Vo9tMmTQtatSrdhZdH"},{"question_id":"q054","query_image":"175806.jpg","option_a_image":"009004.jpg","option_b_image":"131842.jpg","correct_side":"A","model_score":0.7307,"query_url":"https://lh3.googleusercontent.com/d/1es4Xv42-hyTB7UdnPONTHCAvkYG0c8a-","option_a_url":"https://lh3.googleusercontent.com/d/1wZDjX1r4gfPAoVLkKfU6X5PHGNOEgm9G","option_b_url":"https://lh3.googleusercontent.com/d/1WNb2K4QvNFGfYefJs-jyCqADLGEhrMBo"},{"question_id":"q055","query_image":"062045.jpg","option_a_image":"201683.jpg","option_b_image":"093852.jpg","correct_side":"B","model_score":0.8229,"query_url":"https://lh3.googleusercontent.com/d/1D5qYxxouz_sTsdW9YNRThQSpGpH0LJns","option_a_url":"https://lh3.googleusercontent.com/d/17nP9A4lYj-hsJsD4dxWVrngunPLPCt_T","option_b_url":"https://lh3.googleusercontent.com/d/1-vDoIkaEdg8DU4ef-2WP-tqC-m8QXe0b"},{"question_id":"q056","query_image":"108563.jpg","option_a_image":"023706.jpg","option_b_image":"163226.jpg","correct_side":"A","model_score":0.7725,"query_url":"https://lh3.googleusercontent.com/d/1SUNKAMS9shHoa8VJ181udKvb5zD9NSys","option_a_url":"https://lh3.googleusercontent.com/d/1BW5zC7RGQ9Jz61_QXr4F0RlBaRbEY7oW","option_b_url":"https://lh3.googleusercontent.com/d/1I_2Qh0UGiCGVQlOPIVZIKTsJMklAVXjs"},{"question_id":"q057","query_image":"073622.jpg","option_a_image":"168839.jpg","option_b_image":"042665.jpg","correct_side":"B","model_score":0.7047,"query_url":"https://lh3.googleusercontent.com/d/1KJNf1JgHQSMhzm0F2cEl72DPS45KzrLB","option_a_url":"https://lh3.googleusercontent.com/d/1nff16nrLY7HlEzMI41Bbv0MZRwqXvo77","option_b_url":"https://lh3.googleusercontent.com/d/1i0Hhom5jJTMhtlScnzFJL2UY0e4B-i-j"},{"question_id":"q058","query_image":"134765.jpg","option_a_image":"139700.jpg","option_b_image":"178114.jpg","correct_side":"A","model_score":0.6383,"query_url":"https://lh3.googleusercontent.com/d/12VWjAa2eUEmPc_PlhL59K4_J2LYoZAHT","option_a_url":"https://lh3.googleusercontent.com/d/1QIFg3eqgdZw6ceSFba99jj_dlJbU9_2W","option_b_url":"https://lh3.googleusercontent.com/d/1N7wxLhIKlK_iWyJNN4vTOFHNiRJTaZu7"},{"question_id":"q059","query_image":"095797.jpg","option_a_image":"117890.jpg","option_b_image":"075203.jpg","correct_side":"B","model_score":0.6415,"query_url":"https://lh3.googleusercontent.com/d/1gKmjDA8BwF_6DVjVMZz2jv6OKSieTr9J","option_a_url":"https://lh3.googleusercontent.com/d/1u_lCbPqm0zWkD4dj3E0Q7gQZBcjr1QN6","option_b_url":"https://lh3.googleusercontent.com/d/14KHsjgsICurmgfOj2RPjOB8HLlIsqBrW"},{"question_id":"q060","query_image":"011311.jpg","option_a_image":"108851.jpg","option_b_image":"176233.jpg","correct_side":"A","model_score":0.7202,"query_url":"https://lh3.googleusercontent.com/d/1fONLlax7yATrT39f5aRPHVMV9joMqzIH","option_a_url":"https://lh3.googleusercontent.com/d/1IYtQWnFWyet3p0g26WPXdauQhyk6b6ir","option_b_url":"https://lh3.googleusercontent.com/d/1OYXI-BgJJXFlXBU1MseKFD0JdVh9XSRS"},{"question_id":"q061","query_image":"044153.jpg","option_a_image":"056294.jpg","option_b_image":"117890.jpg","correct_side":"B","model_score":0.6656,"query_url":"https://lh3.googleusercontent.com/d/1OHNNH6vGJSKpoEa5pONgkAQhXWGoV6Ky","option_a_url":"https://lh3.googleusercontent.com/d/1JsLOZh5vBSmaLiMg6dQQ-EMjGN1fu155","option_b_url":"https://lh3.googleusercontent.com/d/1u_lCbPqm0zWkD4dj3E0Q7gQZBcjr1QN6"},{"question_id":"q062","query_image":"121918.jpg","option_a_image":"184911.jpg","option_b_image":"199993.jpg","correct_side":"B","model_score":0.7618,"query_url":"https://lh3.googleusercontent.com/d/1rACEc3Vg4jUvromL0zfjpl_fXIkgdLEa","option_a_url":"https://lh3.googleusercontent.com/d/1uSLND2Mr40G_oUpcMBvCiYZfYpncaG35","option_b_url":"https://lh3.googleusercontent.com/d/1WSHocyATgnu503yv3S_Y5ccJnqapXdDH"},{"question_id":"q063","query_image":"029293.jpg","option_a_image":"119199.jpg","option_b_image":"036839.jpg","correct_side":"A","model_score":0.7903,"query_url":"https://lh3.googleusercontent.com/d/18q6pyZpf7AbCL0NHjyF8BvIPN0fR_tXT","option_a_url":"https://lh3.googleusercontent.com/d/1nmjfETcb2sjZ4_FwyJgN2CcJQFnzkEVB","option_b_url":"https://lh3.googleusercontent.com/d/1G-PIXbg3103CHMHPfJnJr6kmn2Jm8QJw"},{"question_id":"q064","query_image":"114573.jpg","option_a_image":"053739.jpg","option_b_image":"074123.jpg","correct_side":"A","model_score":0.7799,"query_url":"https://lh3.googleusercontent.com/d/1wviKurx9uBe_NpfWU_Skhc13cU7P0Hyl","option_a_url":"https://lh3.googleusercontent.com/d/1dyHvQZGfvOhagb-ypZm8SGAsz6E1vwlu","option_b_url":"https://lh3.googleusercontent.com/d/1ZopW8yhkjHcBN4cwdHANl0ym1bBJ76fY"},{"question_id":"q065","query_image":"164506.jpg","option_a_image":"184911.jpg","option_b_image":"118092.jpg","correct_side":"A","model_score":0.7901,"query_url":"https://lh3.googleusercontent.com/d/1YhqIPGQ_m02BjzeuQqrJsj5GPE1D2Qkz","option_a_url":"https://lh3.googleusercontent.com/d/1uSLND2Mr40G_oUpcMBvCiYZfYpncaG35","option_b_url":"https://lh3.googleusercontent.com/d/1_3jro7qYbHz7SoyC-Xy3PY4cwQXo1rKW"},{"question_id":"q066","query_image":"148680.jpg","option_a_image":"108562.jpg","option_b_image":"142299.jpg","correct_side":"B","model_score":0.7884,"query_url":"https://lh3.googleusercontent.com/d/1rolcP8QkByvDqcfT4kqSYq2vv1yz_GPn","option_a_url":"https://lh3.googleusercontent.com/d/16tRdsl8YFVU4_CYesKUoN7V4FTNzZA-O","option_b_url":"https://lh3.googleusercontent.com/d/1j_2HesJ2a4lFNfsUB3MHZVTf4qn5WWuO"},{"question_id":"q067","query_image":"046111.jpg","option_a_image":"110755.jpg","option_b_image":"123972.jpg","correct_side":"B","model_score":0.6475,"query_url":"https://lh3.googleusercontent.com/d/1_7UG6Bc736XvrxTdaCOwsJgkZAs6JfWr","option_a_url":"https://lh3.googleusercontent.com/d/1qPOh-9co1VEXSndLyi_m6i-YH_hBA4YZ","option_b_url":"https://lh3.googleusercontent.com/d/1xNF6cz2ScnOpXJ6mS0WvDRfJfUafRhnC"},{"question_id":"q068","query_image":"056250.jpg","option_a_image":"094728.jpg","option_b_image":"177402.jpg","correct_side":"A","model_score":0.7461,"query_url":"https://lh3.googleusercontent.com/d/1S_VBmXl4qGbWMbxhDxoBL0gV-zdPWLB1","option_a_url":"https://lh3.googleusercontent.com/d/1Al7X0eYb_IrIi6dKggM5zbukN9gifsPf","option_b_url":"https://lh3.googleusercontent.com/d/13HR0AJ-1Av5a59x9i8oZROvx6zEFnqJk"},{"question_id":"q069","query_image":"061135.jpg","option_a_image":"105371.jpg","option_b_image":"178114.jpg","correct_side":"A","model_score":0.7433,"query_url":"https://lh3.googleusercontent.com/d/1nrm2_ncC84nIMyah6NEaOEvh1vrZTwkZ","option_a_url":"https://lh3.googleusercontent.com/d/1doXWgd6-bLr5BUCpiuJcPSpwjnkv_NDJ","option_b_url":"https://lh3.googleusercontent.com/d/1N7wxLhIKlK_iWyJNN4vTOFHNiRJTaZu7"},{"question_id":"q070","query_image":"027422.jpg","option_a_image":"166581.jpg","option_b_image":"075739.jpg","correct_side":"B","model_score":0.7102,"query_url":"https://lh3.googleusercontent.com/d/1llU9GkJjvWJIZKr_5-LcUx_MdpMb0TJ9","option_a_url":"https://lh3.googleusercontent.com/d/1VuBwb5JHJAlxdo75J5TqkJV5SYjcgqib","option_b_url":"https://lh3.googleusercontent.com/d/10r6__5hof6w4zW7hqCJQG6Bf-dhEff0N"},{"question_id":"q071","query_image":"016250.jpg","option_a_image":"129399.jpg","option_b_image":"096076.jpg","correct_side":"A","model_score":0.6997,"query_url":"https://lh3.googleusercontent.com/d/1KLgXRxcJiitA-VDpd7HX_7o3EmZLs1ug","option_a_url":"https://lh3.googleusercontent.com/d/1hOSzWyoFw5LKhb0jmFudzGS-Y2Ok8Tc2","option_b_url":"https://lh3.googleusercontent.com/d/10oWgj8jm2QldoLD-svHhwVqVnO91lOUk"},{"question_id":"q072","query_image":"055735.jpg","option_a_image":"142299.jpg","option_b_image":"040075.jpg","correct_side":"B","model_score":0.6962,"query_url":"https://lh3.googleusercontent.com/d/1kVF8g1fZN7woAvzjt6F_OxvHjURDZlIk","option_a_url":"https://lh3.googleusercontent.com/d/1j_2HesJ2a4lFNfsUB3MHZVTf4qn5WWuO","option_b_url":"https://lh3.googleusercontent.com/d/1LTmyEMQpELzV2tv59hw7WICx343XNH9D"},{"question_id":"q073","query_image":"004378.jpg","option_a_image":"091836.jpg","option_b_image":"081975.jpg","correct_side":"A","model_score":0.7843,"query_url":"https://lh3.googleusercontent.com/d/1w_AJgQOZTz3F6EVCpeDJyj-D5n_fugtb","option_a_url":"https://lh3.googleusercontent.com/d/1CqEDBySqk6AheWsQkuAdxpuPp9g3KWEW","option_b_url":"https://lh3.googleusercontent.com/d/1VuEcZuDRfV8R2OH3aLSb-q3P4hyz5LUy"},{"question_id":"q074","query_image":"139181.jpg","option_a_image":"091836.jpg","option_b_image":"019038.jpg","correct_side":"B","model_score":0.5492,"query_url":"https://lh3.googleusercontent.com/d/12bEFaeY1OQzq-dOk7G52KhdUnkVD_rfP","option_a_url":"https://lh3.googleusercontent.com/d/1CqEDBySqk6AheWsQkuAdxpuPp9g3KWEW","option_b_url":"https://lh3.googleusercontent.com/d/1ev4qiFKMYWQmaoi2aoHimb9jnHkyPEGz"},{"question_id":"q075","query_image":"168424.jpg","option_a_image":"086117.jpg","option_b_image":"111387.jpg","correct_side":"B","model_score":0.748,"query_url":"https://lh3.googleusercontent.com/d/1A5eGJaEeTKYdApQRC6uVzPCIMFIqbTBQ","option_a_url":"https://lh3.googleusercontent.com/d/1UlndMtECyl_4StKokctfpr6yCZenfnDA","option_b_url":"https://lh3.googleusercontent.com/d/17UYWkwazlwjXKF_onbSPe7Sa25E38Ffc"},{"question_id":"q076","query_image":"075693.jpg","option_a_image":"129399.jpg","option_b_image":"068899.jpg","correct_side":"A","model_score":0.731,"query_url":"https://lh3.googleusercontent.com/d/1YWGg1MJur2cBIBy4WYPixe_t0pLaylWf","option_a_url":"https://lh3.googleusercontent.com/d/1hOSzWyoFw5LKhb0jmFudzGS-Y2Ok8Tc2","option_b_url":"https://lh3.googleusercontent.com/d/1XyK4AZ77Zp7aw4IwLpUCysfQmMLPG76a"},{"question_id":"q077","query_image":"039649.jpg","option_a_image":"172324.jpg","option_b_image":"118048.jpg","correct_side":"A","model_score":0.6727,"query_url":"https://lh3.googleusercontent.com/d/149e1hd53lf7uxgUZTp9ljuo1ugibjhaA","option_a_url":"https://lh3.googleusercontent.com/d/18rcONTwx67kOakdKBvKMZd79p98vauU4","option_b_url":"https://lh3.googleusercontent.com/d/1ipasl2ppdrWV9CwrUvkQI7eRNWa2QKYG"},{"question_id":"q078","query_image":"066015.jpg","option_a_image":"180158.jpg","option_b_image":"116688.jpg","correct_side":"B","model_score":0.5468,"query_url":"https://lh3.googleusercontent.com/d/1y6wG240O92ShgTmQA8SZDutA1s_FpFFx","option_a_url":"https://lh3.googleusercontent.com/d/1DXbAfW5HdrkOCmkwv3-hzTSV3iXKYRBn","option_b_url":"https://lh3.googleusercontent.com/d/1YVXO_7e5sy7i60zdlIpRpI3IGlf8Ad6J"},{"question_id":"q079","query_image":"126107.jpg","option_a_image":"068709.jpg","option_b_image":"015157.jpg","correct_side":"B","model_score":0.7281,"query_url":"https://lh3.googleusercontent.com/d/19MzcOVu47TCGSelLqQBrMoem-NPcEibb","option_a_url":"https://lh3.googleusercontent.com/d/1MtDCvUdJ26sOisGaoXhlixtsAdyb_-eP","option_b_url":"https://lh3.googleusercontent.com/d/1Mj_yRBvMcz4YGF6KbqojKqXiQw3cOs6r"},{"question_id":"q080","query_image":"158668.jpg","option_a_image":"074919.jpg","option_b_image":"172222.jpg","correct_side":"A","model_score":0.6418,"query_url":"https://lh3.googleusercontent.com/d/1teU7JLlyo5mJlJvxEjUjdgd5qlOna8zK","option_a_url":"https://lh3.googleusercontent.com/d/1uUX2PplCwhzsyPicXSmD3hhAfiL9j4Cp","option_b_url":"https://lh3.googleusercontent.com/d/1BLpZv6YxA_or-96yaQq2_U0bgI7icseV"},{"question_id":"q081","query_image":"091016.jpg","option_a_image":"072609.jpg","option_b_image":"099147.jpg","correct_side":"B","model_score":0.7527,"query_url":"https://lh3.googleusercontent.com/d/1yC8IVqJ9ZmnbTtsGNWMkPucR8oyEkq9c","option_a_url":"https://lh3.googleusercontent.com/d/1EnjDWIUmC_9284UY9uPb3PODSaUUxA3x","option_b_url":"https://lh3.googleusercontent.com/d/1Nh5MelYs3du2JH3bwY-LesewEKdp4JIz"},{"question_id":"q082","query_image":"125490.jpg","option_a_image":"001084.jpg","option_b_image":"075739.jpg","correct_side":"B","model_score":0.7167,"query_url":"https://lh3.googleusercontent.com/d/1yu3PyHBBSYVMnWOSUwQ5n7L3tVy554dc","option_a_url":"https://lh3.googleusercontent.com/d/1Jj3jyraOcgBYMERJU78Akzf98a2MZYYq","option_b_url":"https://lh3.googleusercontent.com/d/10r6__5hof6w4zW7hqCJQG6Bf-dhEff0N"},{"question_id":"q083","query_image":"026722.jpg","option_a_image":"107322.jpg","option_b_image":"056294.jpg","correct_side":"B","model_score":0.6326,"query_url":"https://lh3.googleusercontent.com/d/1aV92w6SwwlnJRhRs5_T8AbAbN-p_TJiG","option_a_url":"https://lh3.googleusercontent.com/d/1_oL-pwEx2hUEqtFPWdc34mrrH719PYuj","option_b_url":"https://lh3.googleusercontent.com/d/1JsLOZh5vBSmaLiMg6dQQ-EMjGN1fu155"},{"question_id":"q084","query_image":"009784.jpg","option_a_image":"198088.jpg","option_b_image":"069417.jpg","correct_side":"B","model_score":0.7346,"query_url":"https://lh3.googleusercontent.com/d/1nl3tUfNn05-kOZm405YscNDl4MfnxUyl","option_a_url":"https://lh3.googleusercontent.com/d/1F7Nis_3csf6SD6Piyqw2PmwDAFdjTvRR","option_b_url":"https://lh3.googleusercontent.com/d/1QO4NoY4eCLm2bC7y-7oM6f489P-GGwdS"},{"question_id":"q085","query_image":"110117.jpg","option_a_image":"048945.jpg","option_b_image":"166575.jpg","correct_side":"B","model_score":0.747,"query_url":"https://lh3.googleusercontent.com/d/1GV4x1yx2jk-uX3uo8sS_mR4GE7sMWXrl","option_a_url":"https://lh3.googleusercontent.com/d/1hnG2pKz-CoZnjfmZEC3iUplGaLXC2VEZ","option_b_url":"https://lh3.googleusercontent.com/d/1tdjFXL_qhebSgJ07zA_kclMN9dd8O0w_"},{"question_id":"q086","query_image":"140713.jpg","option_a_image":"199907.jpg","option_b_image":"075735.jpg","correct_side":"B","model_score":0.7695,"query_url":"https://lh3.googleusercontent.com/d/1un2vhvSAZjpbFeQu5upK_6_d_28Wkw6M","option_a_url":"https://lh3.googleusercontent.com/d/1rZ0Zz-Ta5gqlRCKxM823QUHNbw5naOTE","option_b_url":"https://lh3.googleusercontent.com/d/159LDNEyHbnbZSb88PwQvvrj_ekKi3BCf"},{"question_id":"q087","query_image":"022431.jpg","option_a_image":"013387.jpg","option_b_image":"092316.jpg","correct_side":"A","model_score":0.7167,"query_url":"https://lh3.googleusercontent.com/d/18au_YfqY1t13ZtzJbAZEmLK_z8yqwUqw","option_a_url":"https://lh3.googleusercontent.com/d/1FPoqwF0TaMaZJCQ44pk8yJAiD1NUH0qX","option_b_url":"https://lh3.googleusercontent.com/d/1uuKyH9GrQrwbmPWo4fpszI6lx2MgTOu0"},{"question_id":"q088","query_image":"101380.jpg","option_a_image":"191016.jpg","option_b_image":"105371.jpg","correct_side":"B","model_score":0.7685,"query_url":"https://lh3.googleusercontent.com/d/1dyqBOydAfvyQn7FE6xYCDMnZSjslAYZ1","option_a_url":"https://lh3.googleusercontent.com/d/1-ZotAUDWyxCzk7yOAoBiracQuUOz910y","option_b_url":"https://lh3.googleusercontent.com/d/1doXWgd6-bLr5BUCpiuJcPSpwjnkv_NDJ"},{"question_id":"q089","query_image":"152731.jpg","option_a_image":"110755.jpg","option_b_image":"013540.jpg","correct_side":"B","model_score":0.5116,"query_url":"https://lh3.googleusercontent.com/d/1yMHwLQvNqgdq6fyPITjpDmGeJJEbt8M_","option_a_url":"https://lh3.googleusercontent.com/d/1qPOh-9co1VEXSndLyi_m6i-YH_hBA4YZ","option_b_url":"https://lh3.googleusercontent.com/d/1uq12g55UJfK3eYxrjIsgryH7hEmSdrgH"},{"question_id":"q090","query_image":"025400.jpg","option_a_image":"100883.jpg","option_b_image":"140001.jpg","correct_side":"B","model_score":0.7179,"query_url":"https://lh3.googleusercontent.com/d/1YitzgJDz93SiTeZ3JDMwIAAznoTYL6UM","option_a_url":"https://lh3.googleusercontent.com/d/1y-R7m7u_9TLuUai2QmrC0Xm9LsKeaIFQ","option_b_url":"https://lh3.googleusercontent.com/d/1MzidbiuWZWK4Hu9va_doCa5mEo4elDyd"},{"question_id":"q091","query_image":"187883.jpg","option_a_image":"053739.jpg","option_b_image":"070735.jpg","correct_side":"A","model_score":0.7611,"query_url":"https://lh3.googleusercontent.com/d/1eUSdZqChrhxWQkrVCgK85HF-sqSC5gQL","option_a_url":"https://lh3.googleusercontent.com/d/1dyHvQZGfvOhagb-ypZm8SGAsz6E1vwlu","option_b_url":"https://lh3.googleusercontent.com/d/1tL3tdK8_gqaNYAmEnr7WCCojph5i6PVu"},{"question_id":"q092","query_image":"015367.jpg","option_a_image":"034036.jpg","option_b_image":"092949.jpg","correct_side":"B","model_score":0.6706,"query_url":"https://lh3.googleusercontent.com/d/1Vwy4rC2rEjrGf3CTwJ990kxBF0-q1ZFB","option_a_url":"https://lh3.googleusercontent.com/d/1kYNvWHIU-uECBJYOkALLgfWGWtcxRF65","option_b_url":"https://lh3.googleusercontent.com/d/1F6fEyZ5ZQmKi4ryDzfGyO-4pkMUk5I1w"},{"question_id":"q093","query_image":"074653.jpg","option_a_image":"068867.jpg","option_b_image":"076347.jpg","correct_side":"B","model_score":0.6885,"query_url":"https://lh3.googleusercontent.com/d/1i30YDJPCRuehgNP2gVqnwuhHRS-uW_7f","option_a_url":"https://lh3.googleusercontent.com/d/1yIN3UvaJ-Im18pUseL1v-4s3MupIj-g7","option_b_url":"https://lh3.googleusercontent.com/d/1FKeeIz4UzGuYuUhYeODqpuHVDVS0riOO"},{"question_id":"q094","query_image":"102093.jpg","option_a_image":"074648.jpg","option_b_image":"199993.jpg","correct_side":"A","model_score":0.6669,"query_url":"https://lh3.googleusercontent.com/d/1OuKlTSYt_oSK3DRULO1r7WcJZl33ogyV","option_a_url":"https://lh3.googleusercontent.com/d/1fAioEK63bi8QgPNL9KFrxrp0nsd_HisK","option_b_url":"https://lh3.googleusercontent.com/d/1WSHocyATgnu503yv3S_Y5ccJnqapXdDH"},{"question_id":"q095","query_image":"140798.jpg","option_a_image":"060469.jpg","option_b_image":"151115.jpg","correct_side":"B","model_score":0.7568,"query_url":"https://lh3.googleusercontent.com/d/15E2fsppCa9KA5_btKOOOQBPPym2WnRAr","option_a_url":"https://lh3.googleusercontent.com/d/1mPVAthnPSnfy7iVCz0BRdoBAZ_HlN3em","option_b_url":"https://lh3.googleusercontent.com/d/1JbrwIwRDai8VatyVzaTcZYb1_C89Tm61"},{"question_id":"q096","query_image":"083303.jpg","option_a_image":"123972.jpg","option_b_image":"201281.jpg","correct_side":"B","model_score":0.6518,"query_url":"https://lh3.googleusercontent.com/d/1Y_j37hofZnCTFcVQLQq1rkBw1zpgBHr_","option_a_url":"https://lh3.googleusercontent.com/d/1xNF6cz2ScnOpXJ6mS0WvDRfJfUafRhnC","option_b_url":"https://lh3.googleusercontent.com/d/11GZIjnPDBionGg7_BJhBbmQgY4WNKyD8"},{"question_id":"q097","query_image":"132532.jpg","option_a_image":"117130.jpg","option_b_image":"069417.jpg","correct_side":"A","model_score":0.7034,"query_url":"https://lh3.googleusercontent.com/d/1VtGPzFzRFEVENO5dLa4Pwr-WcC0Wyqub","option_a_url":"https://lh3.googleusercontent.com/d/1NBsPC0eS_QlLJXAs9mxNmO0TgWqKxJCA","option_b_url":"https://lh3.googleusercontent.com/d/1QO4NoY4eCLm2bC7y-7oM6f489P-GGwdS"},{"question_id":"q098","query_image":"013690.jpg","option_a_image":"001084.jpg","option_b_image":"031629.jpg","correct_side":"B","model_score":0.642,"query_url":"https://lh3.googleusercontent.com/d/17iP3q8NUDAcfqy0PsmbTfnmRHizqUbHr","option_a_url":"https://lh3.googleusercontent.com/d/1Jj3jyraOcgBYMERJU78Akzf98a2MZYYq","option_b_url":"https://lh3.googleusercontent.com/d/14-dcYb1g7PBIUkmx2ft6Ecrntd9fU8FF"},{"question_id":"q099","query_image":"166182.jpg","option_a_image":"028611.jpg","option_b_image":"055654.jpg","correct_side":"A","model_score":0.711,"query_url":"https://lh3.googleusercontent.com/d/1xJ-o2wKiQQNUaSYgP3Ai-izv0DaywsEq","option_a_url":"https://lh3.googleusercontent.com/d/15rHOTdAGvmIRbHaf-HwIlUjtuFMDJBbP","option_b_url":"https://lh3.googleusercontent.com/d/12CDFXJyQWjisyRIZ4ZtoKrQ8w0AetG_R"},{"question_id":"q100","query_image":"125710.jpg","option_a_image":"050134.jpg","option_b_image":"060918.jpg","correct_side":"A","model_score":0.7201,"query_url":"https://lh3.googleusercontent.com/d/1LHDkfEDOFbfT0fQJrAZQ56oIhZHP2lUY","option_a_url":"https://lh3.googleusercontent.com/d/1NjwKHSEaSVIEcfLlUd5od2jP4v6gc7sW","option_b_url":"https://lh3.googleusercontent.com/d/1L9tLmZjyT3hnpRAsd9QIS_nuk-84j0eS"}];
+const NUM_QUESTIONS_PER_ROUND = 10;
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzkxudDdYkqO3zbzKxve_Qily85X0Li-UA_M22dSQccgkh8za22vdWEZOjeFm_6WjT9nQ/exec";
+const STORAGE_KEY_ANSWERED = 'llm_answered_question_ids';
+const STORAGE_KEY_ROUND    = 'llm_round_number';
+
+let myQuestions = [];
+let currentIndex = 0;
+let currentSelection = null;
+let deviceId = null;
+let sessionId = null;
+let roundNumber = 1;
+
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getDeviceId() {
+  let id = localStorage.getItem('llm_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('llm_device_id', id);
+  }
+  return id;
+}
+
+function generateSessionId() {
+  return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function getAnsweredIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ANSWERED);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function saveAnsweredIds(ids) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ANSWERED, JSON.stringify(ids));
+  } catch (e) {}
+}
+
+function getRoundNumber() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROUND);
+    return raw ? parseInt(raw, 10) : 1;
+  } catch (e) { return 1; }
+}
+
+function saveRoundNumber(n) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ROUND, String(n));
+  } catch (e) {}
+}
+
+function init() {
+  deviceId = getDeviceId();
+  roundNumber = getRoundNumber();
+  renderIntro();
+}
+
+function renderIntro() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="intro-screen">
+      <h2>مرحباً بك</h2>
+      <p>
+        سيتم عرض ${NUM_QUESTIONS_PER_ROUND} أسئلة بسيطة عليك.<br>
+        يحتوي كل سؤال على صورة لشخص، وصورتين لشخصين آخرين (أ وب).<br>
+        يُرجى اختيار الشخص الأكثر تشابهاً بصرياً مع الشخص الظاهر في الصورة الأولى.<br>
+        وفي حال عدم وجود تشابه واضح، يمكن اختيار "لا أحد منهما".
+      </p>
+      <button class="start-btn" onclick="startQuiz()">ابدأ التقييم</button>
+    </div>
+  `;
+}
+
+function startQuiz() {
+  sessionId = generateSessionId();
+  const answeredIds = getAnsweredIds();
+  const availableQuestions = ALL_QUESTIONS.filter(q => !answeredIds.includes(q.question_id));
+
+  if (availableQuestions.length === 0) {
+    renderNoMoreQuestions();
+    return;
+  }
+
+  const shuffledIds = shuffle(availableQuestions.map(q => q.question_id));
+  const selectedIds = shuffledIds.slice(0, NUM_QUESTIONS_PER_ROUND);
+  myQuestions = selectedIds.map(qid => ALL_QUESTIONS.find(q => q.question_id === qid));
+  currentIndex = 0;
+  renderQuestion();
+}
+
+function renderNoMoreQuestions() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="thank-you">
+      <div class="checkmark">🙏</div>
+      <h2>شكراً جزيلاً</h2>
+      <p>لقد قمت بالإجابة على جميع الأسئلة المتاحة حالياً.<br>نقدّر وقتك ومساهمتك القيّمة.</p>
+    </div>
+  `;
+}
+
+function renderQuestion() {
+  const q = myQuestions[currentIndex];
+  currentSelection = null;
+
+  const app = document.getElementById('app');
+  const progressPct = Math.round((currentIndex / myQuestions.length) * 100);
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+    <div class="progress-text">السؤال ${currentIndex + 1} من ${myQuestions.length}</div>
+
+    <div class="query-section">
+      <div class="query-label">هذا الشخص 👇</div>
+      <img class="query-img" src="${q.query_url}" alt="query" />
+    </div>
+
+    <div class="question-text">من الأكثر تشابهاً معه من بين الاثنين؟</div>
+
+    <div class="options-row">
+      <div class="option-card" id="optA" onclick="selectOption('A')">
+        <img src="${q.option_a_url}" alt="الخيار أ" />
+        <div class="option-label">أ</div>
+      </div>
+      <div class="option-card" id="optB" onclick="selectOption('B')">
+        <img src="${q.option_b_url}" alt="الخيار ب" />
+        <div class="option-label">ب</div>
+      </div>
+    </div>
+
+    <button class="neither-btn" id="optNeither" onclick="selectOption('neither')">
+      لا أحد منهما يشبهه
+    </button>
+
+    <button class="next-btn" id="nextBtn" onclick="submitAnswer()">التالي</button>
+    <div class="sending-note" id="sendingNote"></div>
+  `;
+}
+
+function selectOption(choice) {
+  currentSelection = choice;
+  document.getElementById('optA').classList.toggle('selected', choice === 'A');
+  document.getElementById('optB').classList.toggle('selected', choice === 'B');
+  document.getElementById('optNeither').classList.toggle('selected', choice === 'neither');
+  document.getElementById('nextBtn').classList.add('enabled');
+}
+
+function submitAnswer() {
+  if (!currentSelection) return;
+
+  const q = myQuestions[currentIndex];
+  const isModelCorrect = currentSelection === q.correct_side;
+
+  const response = {
+    question_id: q.question_id,
+    user_choice: currentSelection,
+    correct_side: q.correct_side,
+    model_was_chosen: isModelCorrect,
+    model_score: q.model_score,
+    device_id: deviceId,
+    session_id: sessionId,
+    round_number: roundNumber,
+  };
+
+  const nextBtn = document.getElementById('nextBtn');
+  const note = document.getElementById('sendingNote');
+  nextBtn.disabled = true;
+  if (note) note.textContent = 'جارٍ الحفظ...';
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(response),
+  }).catch(() => {}).finally(() => {
+    const answeredIds = getAnsweredIds();
+    if (!answeredIds.includes(q.question_id)) {
+      answeredIds.push(q.question_id);
+      saveAnsweredIds(answeredIds);
+    }
+
+    currentIndex++;
+    if (currentIndex >= myQuestions.length) {
+      roundNumber++;
+      saveRoundNumber(roundNumber);
+      renderThankYou();
+    } else {
+      renderQuestion();
+    }
+  });
+}
+
+function renderThankYou() {
+  const answeredIds = getAnsweredIds();
+  const remainingCount = ALL_QUESTIONS.filter(q => !answeredIds.includes(q.question_id)).length;
+
+  const app = document.getElementById('app');
+  const continueSection = remainingCount > 0
+    ? `<button class="continue-btn" onclick="startQuiz()">أرغب بمتابعة ${Math.min(NUM_QUESTIONS_PER_ROUND, remainingCount)} أسئلة إضافية</button>`
+    : `<p class="no-more-note">لقد تمت الإجابة على جميع الأسئلة المتاحة. شكراً لمساهمتك الكاملة.</p>`;
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="thank-you">
+      <div class="checkmark">✅</div>
+      <h2>شكراً لك</h2>
+      <p>تم تسجيل إجاباتك بنجاح.<br>نقدّر وقتك ومساهمتك القيّمة.</p>
+      ${continueSection}
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
