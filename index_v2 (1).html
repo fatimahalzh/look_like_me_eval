@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقييم التشابه البصري</title>
+<style>
+  :root {
+    --navy: #1B3A6B;
+    --navy-dark: #0D1F3C;
+    --green: #2ECC71;
+    --amber: #F1C40F;
+    --red: #E74C3C;
+    --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: white;
+  }
+  .container {
+    max-width: 720px;
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border-radius: 20px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: #A8C4E8; }
+  .progress-bar {
+    width: 100%; height: 8px; background: rgba(255,255,255,0.1);
+    border-radius: 8px; overflow: hidden; margin: 20px 0;
+  }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 8px; transition: width 0.4s ease; }
+  .progress-text { text-align: center; font-size: 13px; color: #A8C4E8; margin-bottom: 20px; }
+  .query-section { text-align: center; margin-bottom: 24px; }
+  .query-label { font-size: 13px; color: #A8C4E8; margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+  .query-img {
+    width: 160px; height: 160px; border-radius: 16px; object-fit: cover;
+    border: 3px solid #E8700A; box-shadow: 0 8px 24px rgba(232,112,10,0.3);
+  }
+  .question-text { text-align: center; font-size: 17px; font-weight: 600; margin: 20px 0; color: white; }
+  .options-row { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; }
+  .option-card {
+    flex: 1; max-width: 220px; background: rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 12px; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.2s ease; text-align: center;
+  }
+  .option-card:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .option-card.selected { border-color: var(--green); background: rgba(46,204,113,0.15); }
+  .option-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
+  .option-label { font-weight: 700; font-size: 16px; color: white; }
+  .extra-options { display: flex; flex-direction: column; gap: 10px; max-width: 340px; margin: 0 auto 20px; }
+  .neither-btn {
+    display: block; width: 100%; padding: 14px;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px; color: #A8C4E8; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .neither-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+  .neither-btn.selected { border-color: var(--amber); background: rgba(241,196,15,0.15); color: var(--amber); }
+  .both-btn {
+    display: block; width: 100%; padding: 14px;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px; color: #A8C4E8; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .both-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+  .both-btn.selected { border-color: var(--green); background: rgba(46,204,113,0.15); color: var(--green); }
+  .next-btn {
+    display: block; width: 100%; padding: 16px; background: var(--green); border: none;
+    border-radius: 12px; color: var(--navy-dark); font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s ease; opacity: 0.4; pointer-events: none;
+  }
+  .next-btn.enabled { opacity: 1; pointer-events: auto; }
+  .next-btn.enabled:hover { background: #27AE60; transform: translateY(-1px); }
+  .next-btn:disabled { opacity: 0.6; pointer-events: none; }
+  .loading, .thank-you { text-align: center; padding: 60px 20px; }
+  .loading .spinner {
+    width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2);
+    border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .thank-you h2 { font-size: 26px; margin-bottom: 14px; }
+  .thank-you p { font-size: 15px; color: #A8C4E8; line-height: 1.8; margin-bottom: 24px; }
+  .thank-you .checkmark { font-size: 56px; margin-bottom: 16px; }
+  .continue-btn {
+    padding: 14px 32px; background: rgba(255,255,255,0.08); border: 2px solid var(--green);
+    border-radius: 12px; color: var(--green); font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .continue-btn:hover { background: rgba(46,204,113,0.15); }
+  .no-more-note { font-size: 13px; color: #A8C4E8; margin-top: 16px; }
+  .intro-screen { text-align: center; padding: 20px 0; }
+  .intro-screen h2 { font-size: 20px; margin-bottom: 16px; }
+  .intro-screen p { font-size: 14px; color: #A8C4E8; line-height: 1.9; margin-bottom: 20px; }
+  .start-btn {
+    padding: 16px 40px; background: var(--green); border: none; border-radius: 12px;
+    color: var(--navy-dark); font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .start-btn:hover { background: #27AE60; }
+  .sending-note { text-align:center; font-size:12px; color:#6b8fc7; margin-top:8px; height:16px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="loading" id="loadingScreen">
+    <div class="spinner"></div>
+    <p>...جارٍ التحميل</p>
+  </div>
+</div>
+
+<script>
+const ALL_QUESTIONS = [{"question_id":"q001","query_image":"201421.jpg","option_a_image":"036996.jpg","option_b_image":"084673.jpg","correct_side":"A","model_score":0.8024,"opponent_score":0.7211,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1M4ZT80Av6UtOOmZQU__GY5f19wGJiHvh","option_a_url":"https://lh3.googleusercontent.com/d/1uyLLYTaVR0CD4nvVYe7zeFmrdnOrWfO0","option_b_url":"https://lh3.googleusercontent.com/d/1Sa3L18u2NEZFptOW0TqlB4c3Aine1kHK"},{"question_id":"q002","query_image":"159731.jpg","option_a_image":"087462.jpg","option_b_image":"135472.jpg","correct_side":"B","model_score":0.7589,"opponent_score":0.6509,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1og05MFQIdY617EgURmjS5clad4SwESMp","option_a_url":"https://lh3.googleusercontent.com/d/1OjPLm0o-90EvXLQfJdjxnoFA8EYMv5Gg","option_b_url":"https://lh3.googleusercontent.com/d/1Xsx-avDDi7HU-9FXMAZym3M4H8fGxb-9"},{"question_id":"q003","query_image":"014570.jpg","option_a_image":"194462.jpg","option_b_image":"052887.jpg","correct_side":"A","model_score":0.6947,"opponent_score":0.5933,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1VWgfWWw5kPP3cOpM4ZLNxda7VuekT8dF","option_a_url":"https://lh3.googleusercontent.com/d/1BYekRCP4hMrISmewg4-AkMuLW_P0h2SD","option_b_url":"https://lh3.googleusercontent.com/d/1HC4NwvqF8ua10Z8MVLayLZAbsF4F9giT"},{"question_id":"q004","query_image":"124774.jpg","option_a_image":"042363.jpg","option_b_image":"110693.jpg","correct_side":"B","model_score":0.6705,"opponent_score":0.4521,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1Oa6_--ly3FmbgKxBZeV8M-oEFnu9VBkm","option_a_url":"https://lh3.googleusercontent.com/d/1V-4DzHhNODUNqO-GT5Obg0-dRPRXzk0H","option_b_url":"https://lh3.googleusercontent.com/d/1As4ylFIM9qQdv7FJTNq6tg5ID680Lq5c"},{"question_id":"q005","query_image":"071227.jpg","option_a_image":"143855.jpg","option_b_image":"062949.jpg","correct_side":"A","model_score":0.6727,"opponent_score":0.5135,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1SP7gguPQYAdt12OI4lBrWKgGY6t35KZM","option_a_url":"https://lh3.googleusercontent.com/d/1jFcThOW1aX-fru4ZX37TTAJB30GlIO8J","option_b_url":"https://lh3.googleusercontent.com/d/1BpXCqE_o0dd2MKFkfRFGT_CEKG-Hmp31"},{"question_id":"q006","query_image":"066096.jpg","option_a_image":"145369.jpg","option_b_image":"043093.jpg","correct_side":"B","model_score":0.6579,"opponent_score":0.5895,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1KcmRbmtBOK5m-Yxx1r0xw_RMjCK-eYf0","option_a_url":"https://lh3.googleusercontent.com/d/1kUVaRdgK-Tuaw_COi3u9POKEwO16OJyX","option_b_url":"https://lh3.googleusercontent.com/d/1SCE1Wtgjg6L_lNvHibOLGuhezTOwuZuv"},{"question_id":"q007","query_image":"088735.jpg","option_a_image":"095831.jpg","option_b_image":"155422.jpg","correct_side":"A","model_score":0.7672,"opponent_score":0.5976,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1QWkDf3NwgA2SmyW3mlKiWIzURHNnx6sr","option_a_url":"https://lh3.googleusercontent.com/d/1zKar3My-gylA37-7UYgblU6DXpi7Gx2-","option_b_url":"https://lh3.googleusercontent.com/d/121hvLyUhFyeRw_pcOhbS_7rm5K0v9P3r"},{"question_id":"q008","query_image":"201617.jpg","option_a_image":"186965.jpg","option_b_image":"052487.jpg","correct_side":"A","model_score":0.688,"opponent_score":0.6125,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1YfsFakLsEXe51V0gDkJAtRxGalFUHLlM","option_a_url":"https://lh3.googleusercontent.com/d/1m5KOFzjYNtOjK1UFW6o-Y73cH6dpu71p","option_b_url":"https://lh3.googleusercontent.com/d/1UX0ofFOLbQTKEiK_EQVOVX4qzNoV8Wii"},{"question_id":"q009","query_image":"065849.jpg","option_a_image":"163037.jpg","option_b_image":"120601.jpg","correct_side":"B","model_score":0.7546,"opponent_score":0.6048,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1vHQd80Bt53-9-biz7dxp203hwgrrvvVX","option_a_url":"https://lh3.googleusercontent.com/d/1jt3RFXCFq7iWYyljeSpIUIQIDaHdEI_R","option_b_url":"https://lh3.googleusercontent.com/d/1o4JBlo6XzVeOfYnm5EKgWjtwjJ0250iy"},{"question_id":"q010","query_image":"027028.jpg","option_a_image":"111360.jpg","option_b_image":"010835.jpg","correct_side":"A","model_score":0.7779,"opponent_score":0.6371,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1uMfTvx6NT8weN_CVz3FLF9mvuPVEFM7J","option_a_url":"https://lh3.googleusercontent.com/d/1rqrD9Ggw_VwwtasWREbCMHY6woshpvpv","option_b_url":"https://lh3.googleusercontent.com/d/1P36YAdDChrgZDgiy2i-Lugdy86QYxoLe"},{"question_id":"q011","query_image":"112976.jpg","option_a_image":"006660.jpg","option_b_image":"110693.jpg","correct_side":"A","model_score":0.7701,"opponent_score":0.5718,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1dratCVIPJHr8oDCsVE0GR9kZU9Q6mi16","option_a_url":"https://lh3.googleusercontent.com/d/1wJjTMwHduW37U2AiHlHd07DQZIVhZs5T","option_b_url":"https://lh3.googleusercontent.com/d/1As4ylFIM9qQdv7FJTNq6tg5ID680Lq5c"},{"question_id":"q012","query_image":"140718.jpg","option_a_image":"084194.jpg","option_b_image":"092771.jpg","correct_side":"B","model_score":0.743,"opponent_score":0.6159,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1UmXiOdb8F5pDACBYG_yloie2lqI1kHF3","option_a_url":"https://lh3.googleusercontent.com/d/1_hPBWeyXLWnIJCUxl3nOJo3NHPUPinJE","option_b_url":"https://lh3.googleusercontent.com/d/1UivvpS_6-N7SeiGC5DwjrIrAGTWfYlo_"},{"question_id":"q013","query_image":"027586.jpg","option_a_image":"070743.jpg","option_b_image":"181009.jpg","correct_side":"B","model_score":0.7603,"opponent_score":0.6599,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1tMklQ9KzyJowYZ-vQUKvWcpyRirlLJ-H","option_a_url":"https://lh3.googleusercontent.com/d/1MgpsV8Q1kSU77BmyGEzzrp-0ASABSeFt","option_b_url":"https://lh3.googleusercontent.com/d/1VmsgfAJGDJ188yxtS-gjkS4LOBAwBWHs"},{"question_id":"q014","query_image":"170224.jpg","option_a_image":"148622.jpg","option_b_image":"007011.jpg","correct_side":"A","model_score":0.7455,"opponent_score":0.6752,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1USmvQpvfiFXCZFHZy3AHZfJWO76z86Rd","option_a_url":"https://lh3.googleusercontent.com/d/12nB7gwHm1kTROmWRnVMZp5gv8bDzUmow","option_b_url":"https://lh3.googleusercontent.com/d/1ENrd-tAzR4vE7hYCwJe8NU7GN2jhcbV6"},{"question_id":"q015","query_image":"003557.jpg","option_a_image":"181919.jpg","option_b_image":"001154.jpg","correct_side":"B","model_score":0.761,"opponent_score":0.5517,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1_FecJ5x9MvhO_of7paoR-eqP2t25wvZv","option_a_url":"https://lh3.googleusercontent.com/d/1LTI5DwKjHr93NcOb7VAsRLSiJxcsJwdp","option_b_url":"https://lh3.googleusercontent.com/d/1nRvx-KqBUUWoS7nEffIg5N7Vag1qLbK3"},{"question_id":"q016","query_image":"164803.jpg","option_a_image":"176997.jpg","option_b_image":"177279.jpg","correct_side":"B","model_score":0.7629,"opponent_score":0.5541,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1XhrIgFBLo3j530b2sw5r1OEPH5azCa5S","option_a_url":"https://lh3.googleusercontent.com/d/1tGRQga_WXr3L7sMLlqgHZxyXErScZgPn","option_b_url":"https://lh3.googleusercontent.com/d/1d4fVHvSjR0OYO9uv7VAHfXOQttxmrCDX"},{"question_id":"q017","query_image":"195732.jpg","option_a_image":"171466.jpg","option_b_image":"189539.jpg","correct_side":"B","model_score":0.6755,"opponent_score":0.5207,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/16X70X6I9_hn_lBhxDIeGft42tPhCNRsF","option_a_url":"https://lh3.googleusercontent.com/d/1ft7XAarqWzV0R_5Buc35TDw2IxrEcFfY","option_b_url":"https://lh3.googleusercontent.com/d/1g0bzgmmoHcOi3iojQgaECOufHBHf64W1"},{"question_id":"q018","query_image":"000123.jpg","option_a_image":"134979.jpg","option_b_image":"043093.jpg","correct_side":"B","model_score":0.7376,"opponent_score":0.6167,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1haAwK4621_hfRgTVu1Jscd1h4mcs19cC","option_a_url":"https://lh3.googleusercontent.com/d/1Tnb5Fzom3Wzjn-xMfW9GO09rlmue_Hkr","option_b_url":"https://lh3.googleusercontent.com/d/1SCE1Wtgjg6L_lNvHibOLGuhezTOwuZuv"},{"question_id":"q019","query_image":"146139.jpg","option_a_image":"090147.jpg","option_b_image":"090856.jpg","correct_side":"A","model_score":0.7594,"opponent_score":0.6592,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1W0vgtNn5wWd4rVaCgW84fvnK8M_I-VYu","option_a_url":"https://lh3.googleusercontent.com/d/1_mF1qI3HqgysW2LjyUxFJNzYtVfnfGgW","option_b_url":"https://lh3.googleusercontent.com/d/1Ja7IzC1jvcWBrACPjG40coqOFbzMJyp4"},{"question_id":"q020","query_image":"070743.jpg","option_a_image":"202151.jpg","option_b_image":"118007.jpg","correct_side":"B","model_score":0.8147,"opponent_score":0.6837,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1MgpsV8Q1kSU77BmyGEzzrp-0ASABSeFt","option_a_url":"https://lh3.googleusercontent.com/d/1Ft35vqbK_GjwWTY08kPGDRn9SfJdGJPk","option_b_url":"https://lh3.googleusercontent.com/d/1JEjdWzp5tNO_qyXj1s17hi2eGaqJseDw"},{"question_id":"q021","query_image":"111499.jpg","option_a_image":"030094.jpg","option_b_image":"125922.jpg","correct_side":"A","model_score":0.7808,"opponent_score":0.6015,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1vHCBIYD59sGFPwp_Pbs7MQsj0VfE8qbV","option_a_url":"https://lh3.googleusercontent.com/d/1fbNxXM-rDg-dHiM2OXfgeimcB_gtNm9H","option_b_url":"https://lh3.googleusercontent.com/d/1QesDY3_jtYGC64ipxJu5HFEPwVNmwbpQ"},{"question_id":"q022","query_image":"058341.jpg","option_a_image":"164521.jpg","option_b_image":"005193.jpg","correct_side":"B","model_score":0.7961,"opponent_score":0.6735,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1C9fh9TD1F74S3WahI9aDiHNcK-fVMyg4","option_a_url":"https://lh3.googleusercontent.com/d/1Xm5pH4ewAuydv0Ha86nlVEDEA1Qt0phs","option_b_url":"https://lh3.googleusercontent.com/d/1i3u9h-iNrIelaixRPOdSF68nYXcpN3Ah"},{"question_id":"q023","query_image":"161699.jpg","option_a_image":"196696.jpg","option_b_image":"067727.jpg","correct_side":"B","model_score":0.6659,"opponent_score":0.5164,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/15TYZwK-n99I7vfcd4RzVZYBBpCf7YK4V","option_a_url":"https://lh3.googleusercontent.com/d/1VoGWzlrd7E1xAypDyFvD6b_52guwpNc5","option_b_url":"https://lh3.googleusercontent.com/d/1grCYTQeMgDM4wEZF_BVMpAhemJWDvgxx"},{"question_id":"q024","query_image":"017545.jpg","option_a_image":"056468.jpg","option_b_image":"109367.jpg","correct_side":"A","model_score":0.7352,"opponent_score":0.6405,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1nkdcZMH1s8dO9wnKUFUBYgmrcn8KzqpI","option_a_url":"https://lh3.googleusercontent.com/d/1CpvEZRo7NTh8zWukX4AhBJDfR5cJUrtv","option_b_url":"https://lh3.googleusercontent.com/d/1c2YXRKU5tRrHUu5Q3aLdmVFY4SsFZrMz"},{"question_id":"q025","query_image":"139189.jpg","option_a_image":"045071.jpg","option_b_image":"076518.jpg","correct_side":"A","model_score":0.6327,"opponent_score":0.5419,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1YdC5dbabPFXepQlaHlkgoIKdHOeiZ8P5","option_a_url":"https://lh3.googleusercontent.com/d/1Baufd0uvcbLwOHkIhtkjJLT1tpQNIwnL","option_b_url":"https://lh3.googleusercontent.com/d/1e5aC3erZACUeOy6QCC5ZNoEA4ONaAzY2"},{"question_id":"q026","query_image":"078393.jpg","option_a_image":"037446.jpg","option_b_image":"139320.jpg","correct_side":"A","model_score":0.7267,"opponent_score":0.5252,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1qZHveK-BxxYSJWpEiV2CNsYqPK0VBYbb","option_a_url":"https://lh3.googleusercontent.com/d/1iyH_o3C0to726tWXGdtaFy-O9hSDstw8","option_b_url":"https://lh3.googleusercontent.com/d/1CpT_vRFJpjcYIbW0LlWcIXz6Em5aFq68"},{"question_id":"q027","query_image":"085024.jpg","option_a_image":"109367.jpg","option_b_image":"075542.jpg","correct_side":"A","model_score":0.8223,"opponent_score":0.6631,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1oFYCMl8LCs2z3pipOV3fvxc7B_qJSU52","option_a_url":"https://lh3.googleusercontent.com/d/1c2YXRKU5tRrHUu5Q3aLdmVFY4SsFZrMz","option_b_url":"https://lh3.googleusercontent.com/d/1udVDjAYfYaJU-n9qfwdMBkIjjXirzIsk"},{"question_id":"q028","query_image":"131157.jpg","option_a_image":"020035.jpg","option_b_image":"164521.jpg","correct_side":"A","model_score":0.7227,"opponent_score":0.6114,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1wIx8oNne7MUfoSnEnGr2QFhu62R1H-9-","option_a_url":"https://lh3.googleusercontent.com/d/1USd8Cb0RReZ-iWjQ7qpnlBnE5-LciNx7","option_b_url":"https://lh3.googleusercontent.com/d/1Xm5pH4ewAuydv0Ha86nlVEDEA1Qt0phs"},{"question_id":"q029","query_image":"156949.jpg","option_a_image":"166850.jpg","option_b_image":"201617.jpg","correct_side":"A","model_score":0.7478,"opponent_score":0.6387,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1P7BaIsrVe0WZ5i1HnQ2r-axpGvrX25h4","option_a_url":"https://lh3.googleusercontent.com/d/1sekWWxybOTFcB4WUFURsOuNbXGfOG-dm","option_b_url":"https://lh3.googleusercontent.com/d/1YfsFakLsEXe51V0gDkJAtRxGalFUHLlM"},{"question_id":"q030","query_image":"018592.jpg","option_a_image":"194942.jpg","option_b_image":"061914.jpg","correct_side":"A","model_score":0.7407,"opponent_score":0.6526,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1hz_vruAPax1kcOVD2pqc3giYggIEnMxV","option_a_url":"https://lh3.googleusercontent.com/d/1bF4qE5srPBZhAaBI_f3CrD69XW_ZZNe5","option_b_url":"https://lh3.googleusercontent.com/d/1h7kaYePkbrW7OtlD80BCWjLEV2h2b7CO"},{"question_id":"q031","query_image":"165242.jpg","option_a_image":"033533.jpg","option_b_image":"057080.jpg","correct_side":"B","model_score":0.7918,"opponent_score":0.5982,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/10L4NSge_OenookEZWn8A9xi1LWcUeGz5","option_a_url":"https://lh3.googleusercontent.com/d/1d1QO_ojRkOhlplNLDf7qbXf9FgVfUb5F","option_b_url":"https://lh3.googleusercontent.com/d/1tLDeNYFxkojYyIsbGQba5fUlM2idB2zF"},{"question_id":"q032","query_image":"097735.jpg","option_a_image":"182237.jpg","option_b_image":"145369.jpg","correct_side":"B","model_score":0.6728,"opponent_score":0.5357,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1BddfZ8PkxkdKPssU8-i0Mo-SP5GpTQlZ","option_a_url":"https://lh3.googleusercontent.com/d/1m6IFKkmDkw5ylzidBrhxkb6X_mVcJ-Iv","option_b_url":"https://lh3.googleusercontent.com/d/1kUVaRdgK-Tuaw_COi3u9POKEwO16OJyX"},{"question_id":"q033","query_image":"147042.jpg","option_a_image":"182895.jpg","option_b_image":"101297.jpg","correct_side":"A","model_score":0.6042,"opponent_score":0.4346,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1JDLDDQq17ZGusNPu3EkByhJ0nqxhxckI","option_a_url":"https://lh3.googleusercontent.com/d/10mGPI9293q1PHx08ROvLaknmFn8QfKtN","option_b_url":"https://lh3.googleusercontent.com/d/1pg_iubx7XNgsQz3vQSOLBCQLup3dNDI5"},{"question_id":"q034","query_image":"070597.jpg","option_a_image":"026286.jpg","option_b_image":"133027.jpg","correct_side":"A","model_score":0.8408,"opponent_score":0.6887,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1lbnMcIKU2BWITH-GGj6VXUKk73hKNlPC","option_a_url":"https://lh3.googleusercontent.com/d/17o8Yt8Ghn_i8CwAlDKRut5U-i4ekI-_J","option_b_url":"https://lh3.googleusercontent.com/d/1h3dpFaFjTDn5UXfqiVYIj2IvKel2i-kP"},{"question_id":"q035","query_image":"067782.jpg","option_a_image":"063442.jpg","option_b_image":"151716.jpg","correct_side":"A","model_score":0.6896,"opponent_score":0.5165,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1DU-mpMN71AyuJA_H6R5d3OjIFbZzx7IA","option_a_url":"https://lh3.googleusercontent.com/d/1pUFe1aw5f77-K37NB4922gy6V3vpflC4","option_b_url":"https://lh3.googleusercontent.com/d/1FEk1Dc_7jF90XmebpHJcPM-Mv3qiWvM-"},{"question_id":"q036","query_image":"037446.jpg","option_a_image":"084271.jpg","option_b_image":"190485.jpg","correct_side":"A","model_score":0.746,"opponent_score":0.5021,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1iyH_o3C0to726tWXGdtaFy-O9hSDstw8","option_a_url":"https://lh3.googleusercontent.com/d/1hpR63eI-1ZT1LNw__rbI88pk2iPeIF_8","option_b_url":"https://lh3.googleusercontent.com/d/1uimfx8F0iNHcISqeNym1zzVCSOxsgpXb"},{"question_id":"q037","query_image":"058569.jpg","option_a_image":"127111.jpg","option_b_image":"090856.jpg","correct_side":"A","model_score":0.7682,"opponent_score":0.684,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1TXHEkbEij3PWXgR5oFu9ccYOftlNqVlv","option_a_url":"https://lh3.googleusercontent.com/d/1c8UuIeS9k7GAR7ir9Qvp8pmxuitHsiJ4","option_b_url":"https://lh3.googleusercontent.com/d/1Ja7IzC1jvcWBrACPjG40coqOFbzMJyp4"},{"question_id":"q038","query_image":"194942.jpg","option_a_image":"142848.jpg","option_b_image":"007011.jpg","correct_side":"A","model_score":0.7965,"opponent_score":0.6169,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1bF4qE5srPBZhAaBI_f3CrD69XW_ZZNe5","option_a_url":"https://lh3.googleusercontent.com/d/1Y1v3tXL0UX1PU65WA91iGx5gYyYuEg31","option_b_url":"https://lh3.googleusercontent.com/d/1ENrd-tAzR4vE7hYCwJe8NU7GN2jhcbV6"},{"question_id":"q039","query_image":"166003.jpg","option_a_image":"131209.jpg","option_b_image":"016485.jpg","correct_side":"B","model_score":0.655,"opponent_score":0.5551,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1_BC2Cbg2IJQchxl7qcOvLzj7PW64edC_","option_a_url":"https://lh3.googleusercontent.com/d/1SytPOrvz9FUBe5-hVYT--Le6HIX6QshB","option_b_url":"https://lh3.googleusercontent.com/d/1PIY40HT7d7npobsY_wtVJ1w9pFmJmWVs"},{"question_id":"q040","query_image":"083160.jpg","option_a_image":"134727.jpg","option_b_image":"135956.jpg","correct_side":"A","model_score":0.7448,"opponent_score":0.5632,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1kMb1qtrN8gL_Wdu35ISDUuYYI1e5df_V","option_a_url":"https://lh3.googleusercontent.com/d/1n1IZvz20shKzplvpn9ACDJNb-mnaAPGf","option_b_url":"https://lh3.googleusercontent.com/d/1ro_ERm_ttoWWfv8QjS5Gf7Po9dIInN36"},{"question_id":"q041","query_image":"201752.jpg","option_a_image":"190485.jpg","option_b_image":"085500.jpg","correct_side":"A","model_score":0.6561,"opponent_score":0.5179,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1VMHTxCpdZBRjqVfpQuenxgfoslJp-fPu","option_a_url":"https://lh3.googleusercontent.com/d/1uimfx8F0iNHcISqeNym1zzVCSOxsgpXb","option_b_url":"https://lh3.googleusercontent.com/d/1rhcGpipaVmc4rqWjSWtF82l_gMHgm62R"},{"question_id":"q042","query_image":"188378.jpg","option_a_image":"163239.jpg","option_b_image":"142848.jpg","correct_side":"A","model_score":0.7765,"opponent_score":0.6553,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1or8-sGjr1WPkRyMjXNDimNCpmBEo9IdL","option_a_url":"https://lh3.googleusercontent.com/d/1nqKRJZicRwTWGxXepRdGTqnVSI2fgiUf","option_b_url":"https://lh3.googleusercontent.com/d/1Y1v3tXL0UX1PU65WA91iGx5gYyYuEg31"},{"question_id":"q043","query_image":"138197.jpg","option_a_image":"155648.jpg","option_b_image":"023297.jpg","correct_side":"A","model_score":0.6783,"opponent_score":0.5897,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1jS8l_mTAVDE0iehBHzPexNjq9klT6p7b","option_a_url":"https://lh3.googleusercontent.com/d/1EO5segfdbFOzH2zRIBQIvb3GS1QIHVaG","option_b_url":"https://lh3.googleusercontent.com/d/1W-xfrqev3CJ97bVreGyBmdxGp2FZyrrV"},{"question_id":"q044","query_image":"063442.jpg","option_a_image":"088975.jpg","option_b_image":"191473.jpg","correct_side":"B","model_score":0.759,"opponent_score":0.6251,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1pUFe1aw5f77-K37NB4922gy6V3vpflC4","option_a_url":"https://lh3.googleusercontent.com/d/1VxNGIVbN5D6Zk8Qu3yr3ozgcsd7-p2GF","option_b_url":"https://lh3.googleusercontent.com/d/1MPiJfWG4xK0XCbYr1o98BY12U8vkXEqd"},{"question_id":"q045","query_image":"042995.jpg","option_a_image":"182237.jpg","option_b_image":"174127.jpg","correct_side":"B","model_score":0.7583,"opponent_score":0.5959,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1B8-6Z42iMaiJ-zxjFFdY7NvugRA6WLOt","option_a_url":"https://lh3.googleusercontent.com/d/1m6IFKkmDkw5ylzidBrhxkb6X_mVcJ-Iv","option_b_url":"https://lh3.googleusercontent.com/d/1r8fURwWqhPeKhNMrkkJ5kYD-kPlVNkMx"},{"question_id":"q046","query_image":"076518.jpg","option_a_image":"082910.jpg","option_b_image":"131157.jpg","correct_side":"A","model_score":0.731,"opponent_score":0.6445,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1e5aC3erZACUeOy6QCC5ZNoEA4ONaAzY2","option_a_url":"https://lh3.googleusercontent.com/d/1JZAzrselUmRXA75owWC9lInXQRoER_sN","option_b_url":"https://lh3.googleusercontent.com/d/1wIx8oNne7MUfoSnEnGr2QFhu62R1H-9-"},{"question_id":"q047","query_image":"032030.jpg","option_a_image":"170960.jpg","option_b_image":"081606.jpg","correct_side":"B","model_score":0.7302,"opponent_score":0.6358,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1YF_XK4u_928tyVPmlGZvdO2kxl8ubPZL","option_a_url":"https://lh3.googleusercontent.com/d/1mHioc1bEeQoLLxjcsWp65fpz_DnSUUBk","option_b_url":"https://lh3.googleusercontent.com/d/19674i98a9Sq9PTxvDTG0OonxJkKPhYGJ"},{"question_id":"q048","query_image":"035761.jpg","option_a_image":"088735.jpg","option_b_image":"174996.jpg","correct_side":"B","model_score":0.7631,"opponent_score":0.6267,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1mOAlM27i1MGw028WIoPkxsd2kfYJNuTn","option_a_url":"https://lh3.googleusercontent.com/d/1QWkDf3NwgA2SmyW3mlKiWIzURHNnx6sr","option_b_url":"https://lh3.googleusercontent.com/d/1zf9bB-dRDuoJuvNnWnByIyhvSHPyyPWy"},{"question_id":"q049","query_image":"044354.jpg","option_a_image":"113151.jpg","option_b_image":"066421.jpg","correct_side":"A","model_score":0.7975,"opponent_score":0.6661,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1WJUmrycIxvGhPJUB8BJbDXqZFyq7eLcr","option_a_url":"https://lh3.googleusercontent.com/d/1gDr8eZzG1Izf59vtMRNERacnqiVzrziK","option_b_url":"https://lh3.googleusercontent.com/d/1Dc_x_JPuD8caqG77VADfOUevaBPy9azp"},{"question_id":"q050","query_image":"145369.jpg","option_a_image":"190439.jpg","option_b_image":"121990.jpg","correct_side":"A","model_score":0.7805,"opponent_score":0.6374,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1kUVaRdgK-Tuaw_COi3u9POKEwO16OJyX","option_a_url":"https://lh3.googleusercontent.com/d/1Sc5_2s9U19UFEipdne4FLowCTjtWP0CC","option_b_url":"https://lh3.googleusercontent.com/d/1e3TMrWdJ7L-usLF4CLmOyMqGqreLRZnj"},{"question_id":"q051","query_image":"159675.jpg","option_a_image":"043539.jpg","option_b_image":"139115.jpg","correct_side":"B","model_score":0.7411,"opponent_score":0.5756,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1bt__dmYa4KrcYtc13EaOAGZl1IyEfRPx","option_a_url":"https://lh3.googleusercontent.com/d/1NOY_TiVix8JWPIZHegNySUp2WZr-eTeU","option_b_url":"https://lh3.googleusercontent.com/d/15e7uWhuZrvtsvYY6jmBkjNhn5DgFVlB4"},{"question_id":"q052","query_image":"021894.jpg","option_a_image":"125398.jpg","option_b_image":"058537.jpg","correct_side":"B","model_score":0.6295,"opponent_score":0.5669,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1v9ufA8XS_IlHzUn74uuZYk-WhlFH8yN9","option_a_url":"https://lh3.googleusercontent.com/d/1U8CixjFvvKwJXxy9VJzWwXx05uRJ8LJ-","option_b_url":"https://lh3.googleusercontent.com/d/1Mt-J0H0aF495o42tLIcOZJbOBL7pW-Ws"},{"question_id":"q053","query_image":"106918.jpg","option_a_image":"082910.jpg","option_b_image":"173267.jpg","correct_side":"A","model_score":0.6921,"opponent_score":0.5696,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/16wpejJTZUr-lPA3owniQUgSRZ7FjgYya","option_a_url":"https://lh3.googleusercontent.com/d/1JZAzrselUmRXA75owWC9lInXQRoER_sN","option_b_url":"https://lh3.googleusercontent.com/d/16EeEaCsUgDzbcu-eatk6vNu8TU1VY1qx"},{"question_id":"q054","query_image":"151716.jpg","option_a_image":"131209.jpg","option_b_image":"074786.jpg","correct_side":"B","model_score":0.6654,"opponent_score":0.5699,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1FEk1Dc_7jF90XmebpHJcPM-Mv3qiWvM-","option_a_url":"https://lh3.googleusercontent.com/d/1SytPOrvz9FUBe5-hVYT--Le6HIX6QshB","option_b_url":"https://lh3.googleusercontent.com/d/1JBHCLDgKvr4EMrncTS0U7a4kLI03HjHL"},{"question_id":"q055","query_image":"111503.jpg","option_a_image":"043367.jpg","option_b_image":"044165.jpg","correct_side":"A","model_score":0.7967,"opponent_score":0.6563,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1DdwoZgJVqm4-xzcaW0TWYfGjPDyk653y","option_a_url":"https://lh3.googleusercontent.com/d/1OmLfxivLUUcJT5_XiRocrHBxNBwmXSth","option_b_url":"https://lh3.googleusercontent.com/d/113iRWZKGk9PVvS5a3ifsNz2EZbogr37X"},{"question_id":"q056","query_image":"202280.jpg","option_a_image":"014570.jpg","option_b_image":"087697.jpg","correct_side":"A","model_score":0.6609,"opponent_score":0.5835,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1YgzMkWY9r9UPtCczccLtPfQjlgIyQxlI","option_a_url":"https://lh3.googleusercontent.com/d/1VWgfWWw5kPP3cOpM4ZLNxda7VuekT8dF","option_b_url":"https://lh3.googleusercontent.com/d/1bmsS4odA9TMBXI5plZQ7wGqiNAGFS_ZW"},{"question_id":"q057","query_image":"036471.jpg","option_a_image":"031597.jpg","option_b_image":"085767.jpg","correct_side":"A","model_score":0.7162,"opponent_score":0.6219,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/10N9Magm_P5k7L354FuDqw_iH5Yu1QG9i","option_a_url":"https://lh3.googleusercontent.com/d/1pU2aPPv14JjaVGi9x5m50WpHV9P-ZPV9","option_b_url":"https://lh3.googleusercontent.com/d/1FdTmLNTUdNeMb2EArKjnvivzO14FU_OB"},{"question_id":"q058","query_image":"075468.jpg","option_a_image":"061632.jpg","option_b_image":"054534.jpg","correct_side":"B","model_score":0.7257,"opponent_score":0.5598,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1_qrsvOzyPDLS_EfcRDPv7fZpmZVmPnPc","option_a_url":"https://lh3.googleusercontent.com/d/1R_fXpzqX7fgRKgQY7n73hq5jK2Shxefq","option_b_url":"https://lh3.googleusercontent.com/d/1IMFU0BBVO95WTbheZlkoTJzuBif9h7ir"},{"question_id":"q059","query_image":"036086.jpg","option_a_image":"058569.jpg","option_b_image":"153995.jpg","correct_side":"A","model_score":0.7576,"opponent_score":0.6894,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1dgs9-34p6eL0X6cp61B49296tjL7SgAs","option_a_url":"https://lh3.googleusercontent.com/d/1TXHEkbEij3PWXgR5oFu9ccYOftlNqVlv","option_b_url":"https://lh3.googleusercontent.com/d/1DC-nMxJJCj8OSVb1k56RJmOc_ifZWtsu"},{"question_id":"q060","query_image":"155422.jpg","option_a_image":"167586.jpg","option_b_image":"041870.jpg","correct_side":"A","model_score":0.6721,"opponent_score":0.5849,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/121hvLyUhFyeRw_pcOhbS_7rm5K0v9P3r","option_a_url":"https://lh3.googleusercontent.com/d/1HlAo-Z6SsqbZG6GcgmtDUCh0yCdwzolX","option_b_url":"https://lh3.googleusercontent.com/d/1nvsjrSyPEOENCxDZ6KNU1qh3bzTOzR1z"},{"question_id":"q061","query_image":"016485.jpg","option_a_image":"189526.jpg","option_b_image":"048529.jpg","correct_side":"A","model_score":0.7161,"opponent_score":0.6083,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1PIY40HT7d7npobsY_wtVJ1w9pFmJmWVs","option_a_url":"https://lh3.googleusercontent.com/d/1Z8pXRoW--SnYHGuFjtXt_admgDzIQKbU","option_b_url":"https://lh3.googleusercontent.com/d/12CmO8LDngNvwWys9JEb9Zz0GraItTt8q"},{"question_id":"q062","query_image":"057472.jpg","option_a_image":"058569.jpg","option_b_image":"185995.jpg","correct_side":"B","model_score":0.7516,"opponent_score":0.596,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1M-vSnuUe2Lwut6AFRSP4ywdrYVpjbtQK","option_a_url":"https://lh3.googleusercontent.com/d/1TXHEkbEij3PWXgR5oFu9ccYOftlNqVlv","option_b_url":"https://lh3.googleusercontent.com/d/1KU5CFgM7I6QBTDSOmX0LnR5nOyo4AgdX"},{"question_id":"q063","query_image":"165696.jpg","option_a_image":"109367.jpg","option_b_image":"142848.jpg","correct_side":"B","model_score":0.7728,"opponent_score":0.626,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1i0xmxjoOovJweqeO-kiBFMWc3AYfpI3w","option_a_url":"https://lh3.googleusercontent.com/d/1c2YXRKU5tRrHUu5Q3aLdmVFY4SsFZrMz","option_b_url":"https://lh3.googleusercontent.com/d/1Y1v3tXL0UX1PU65WA91iGx5gYyYuEg31"},{"question_id":"q064","query_image":"120994.jpg","option_a_image":"133083.jpg","option_b_image":"190439.jpg","correct_side":"A","model_score":0.679,"opponent_score":0.5962,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1sIILrRRCRj1I9yOEDy6YFUDOsJf8tqYh","option_a_url":"https://lh3.googleusercontent.com/d/1uwwFmfdsEI4agKcKfDbA_8VxnPTbwiph","option_b_url":"https://lh3.googleusercontent.com/d/1Sc5_2s9U19UFEipdne4FLowCTjtWP0CC"},{"question_id":"q065","query_image":"197333.jpg","option_a_image":"051249.jpg","option_b_image":"041870.jpg","correct_side":"A","model_score":0.666,"opponent_score":0.5381,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1WfV1aO7rsD5N8ufrgrG-iNTNd-KmTm30","option_a_url":"https://lh3.googleusercontent.com/d/1YRRpW5afWE4pDAxB_w2M2tip6pq2XOt8","option_b_url":"https://lh3.googleusercontent.com/d/1nvsjrSyPEOENCxDZ6KNU1qh3bzTOzR1z"},{"question_id":"q066","query_image":"063396.jpg","option_a_image":"123888.jpg","option_b_image":"137797.jpg","correct_side":"B","model_score":0.6455,"opponent_score":0.5122,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1ZUtjE9y1nbR_Cz1L_cV99WzVZjWgcPBu","option_a_url":"https://lh3.googleusercontent.com/d/1b_ElSFpGLTg596YF2aBoJpPlYqAQ29zH","option_b_url":"https://lh3.googleusercontent.com/d/1taPL1nKa4nY_L-1jOzrAMNejmgYqpGda"},{"question_id":"q067","query_image":"153995.jpg","option_a_image":"045945.jpg","option_b_image":"061914.jpg","correct_side":"B","model_score":0.7661,"opponent_score":0.6678,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1DC-nMxJJCj8OSVb1k56RJmOc_ifZWtsu","option_a_url":"https://lh3.googleusercontent.com/d/1-Xqur1H6-mIF6Iy7gMQr24vqh4nzwDha","option_b_url":"https://lh3.googleusercontent.com/d/1h7kaYePkbrW7OtlD80BCWjLEV2h2b7CO"},{"question_id":"q068","query_image":"120378.jpg","option_a_image":"090856.jpg","option_b_image":"004072.jpg","correct_side":"A","model_score":0.7971,"opponent_score":0.6699,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1mGda6KWtG91_YqyDuSUSMSY-7T3FtP1m","option_a_url":"https://lh3.googleusercontent.com/d/1Ja7IzC1jvcWBrACPjG40coqOFbzMJyp4","option_b_url":"https://lh3.googleusercontent.com/d/1Nz_541o3vcT7lZj8o9mW3X0Uc-83rI6w"},{"question_id":"q069","query_image":"030094.jpg","option_a_image":"111499.jpg","option_b_image":"050007.jpg","correct_side":"A","model_score":0.7808,"opponent_score":0.6139,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1fbNxXM-rDg-dHiM2OXfgeimcB_gtNm9H","option_a_url":"https://lh3.googleusercontent.com/d/1vHCBIYD59sGFPwp_Pbs7MQsj0VfE8qbV","option_b_url":"https://lh3.googleusercontent.com/d/1PbrlrcIoFVB8xnm6pV1FtKtx1BI6AvK_"},{"question_id":"q070","query_image":"186890.jpg","option_a_image":"088895.jpg","option_b_image":"172019.jpg","correct_side":"B","model_score":0.6636,"opponent_score":0.5297,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1xH9KIbRWyNpG-i-Qq_oxRMjZdu63BSsQ","option_a_url":"https://lh3.googleusercontent.com/d/1v5AwWbu2vsfdzXuCKqnAcT8oM2Pt1uCw","option_b_url":"https://lh3.googleusercontent.com/d/1v78FslEeXNrzUQtOsOqvyk8dCHJGWNO-"},{"question_id":"q071","query_image":"032031.jpg","option_a_image":"023297.jpg","option_b_image":"072004.jpg","correct_side":"A","model_score":0.7906,"opponent_score":0.6566,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1mG5ohMraU59WhidJsooUfU9rXna5jYkT","option_a_url":"https://lh3.googleusercontent.com/d/1W-xfrqev3CJ97bVreGyBmdxGp2FZyrrV","option_b_url":"https://lh3.googleusercontent.com/d/11AJONLRXLyWLtfCK9xuiQIK3H9r76fnu"},{"question_id":"q072","query_image":"194246.jpg","option_a_image":"048308.jpg","option_b_image":"201752.jpg","correct_side":"B","model_score":0.6219,"opponent_score":0.4978,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1I8wltWBee4f6q5rSQZ2_NSVPE15gheUv","option_a_url":"https://lh3.googleusercontent.com/d/1KHBrJMq1tZ0NBS2gYzHUlxt35I2bVwse","option_b_url":"https://lh3.googleusercontent.com/d/1VMHTxCpdZBRjqVfpQuenxgfoslJp-fPu"},{"question_id":"q073","query_image":"071798.jpg","option_a_image":"051061.jpg","option_b_image":"130671.jpg","correct_side":"A","model_score":0.7314,"opponent_score":0.6189,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1RUcO17PLK3Wavq2tcl1sWkul_kDkiHXp","option_a_url":"https://lh3.googleusercontent.com/d/17ldOBnWoFKORB-4L2be08VDPJFT53oSY","option_b_url":"https://lh3.googleusercontent.com/d/1hYFw3GAY6vfcg07oJkYhgOV6x2W9kWu6"},{"question_id":"q074","query_image":"139320.jpg","option_a_image":"190485.jpg","option_b_image":"090622.jpg","correct_side":"A","model_score":0.7582,"opponent_score":0.5556,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1CpT_vRFJpjcYIbW0LlWcIXz6Em5aFq68","option_a_url":"https://lh3.googleusercontent.com/d/1uimfx8F0iNHcISqeNym1zzVCSOxsgpXb","option_b_url":"https://lh3.googleusercontent.com/d/1ECMqn_KV8ci9K-p9qt_O3J8RVMF_Q_yp"},{"question_id":"q075","query_image":"070344.jpg","option_a_image":"081606.jpg","option_b_image":"176768.jpg","correct_side":"B","model_score":0.7406,"opponent_score":0.613,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1LqGN1iaAja45no9_1I3jdSkoLPhpZ0ph","option_a_url":"https://lh3.googleusercontent.com/d/19674i98a9Sq9PTxvDTG0OonxJkKPhYGJ","option_b_url":"https://lh3.googleusercontent.com/d/1Ou3cjmiiHiMDzovPq-q_j7K1E5jH7Tfg"},{"question_id":"q076","query_image":"175331.jpg","option_a_image":"139320.jpg","option_b_image":"069519.jpg","correct_side":"A","model_score":0.685,"opponent_score":0.5057,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/17-yt1X0Oe6gLf4rbL2--eS6Zt2jpONrl","option_a_url":"https://lh3.googleusercontent.com/d/1CpT_vRFJpjcYIbW0LlWcIXz6Em5aFq68","option_b_url":"https://lh3.googleusercontent.com/d/1RxuifN5tlE8OfnNg5cW3R0dnQX0b6y-w"},{"question_id":"q077","query_image":"121990.jpg","option_a_image":"190439.jpg","option_b_image":"113807.jpg","correct_side":"A","model_score":0.745,"opponent_score":0.5992,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1e3TMrWdJ7L-usLF4CLmOyMqGqreLRZnj","option_a_url":"https://lh3.googleusercontent.com/d/1Sc5_2s9U19UFEipdne4FLowCTjtWP0CC","option_b_url":"https://lh3.googleusercontent.com/d/1t_FvCX4MQ78NSmkK1DiG7dYuIxCgfxPB"},{"question_id":"q078","query_image":"097648.jpg","option_a_image":"081266.jpg","option_b_image":"073252.jpg","correct_side":"B","model_score":0.7882,"opponent_score":0.6701,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1P1Doi7LNX4GlQU6g2R4OgqxmiuiFDyC-","option_a_url":"https://lh3.googleusercontent.com/d/12dxZgMpKsKwQ3b0idbYeuEJFmX9AmRg4","option_b_url":"https://lh3.googleusercontent.com/d/1DtfWHXWbmSOkZbftymrprfPlRkevJA7F"},{"question_id":"q079","query_image":"167274.jpg","option_a_image":"067727.jpg","option_b_image":"161699.jpg","correct_side":"A","model_score":0.6023,"opponent_score":0.5087,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1YU8IiAc04BlRCr4Ep6ZqqPzpRqQ33Pip","option_a_url":"https://lh3.googleusercontent.com/d/1grCYTQeMgDM4wEZF_BVMpAhemJWDvgxx","option_b_url":"https://lh3.googleusercontent.com/d/15TYZwK-n99I7vfcd4RzVZYBBpCf7YK4V"},{"question_id":"q080","query_image":"172019.jpg","option_a_image":"186890.jpg","option_b_image":"063291.jpg","correct_side":"A","model_score":0.6636,"opponent_score":0.4935,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1v78FslEeXNrzUQtOsOqvyk8dCHJGWNO-","option_a_url":"https://lh3.googleusercontent.com/d/1xH9KIbRWyNpG-i-Qq_oxRMjZdu63BSsQ","option_b_url":"https://lh3.googleusercontent.com/d/1t93dR5A_UiFQowQQhPsWUFZln1olFH9C"},{"question_id":"q081","query_image":"159390.jpg","option_a_image":"173267.jpg","option_b_image":"136986.jpg","correct_side":"A","model_score":0.6498,"opponent_score":0.529,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/168unhTP2clV-Z4x5kqoRvfrwbTFqDEP-","option_a_url":"https://lh3.googleusercontent.com/d/16EeEaCsUgDzbcu-eatk6vNu8TU1VY1qx","option_b_url":"https://lh3.googleusercontent.com/d/1SJHSx0TXd1S_SiWwacS5oCe0kW_PNOBf"},{"question_id":"q082","query_image":"110828.jpg","option_a_image":"004072.jpg","option_b_image":"076900.jpg","correct_side":"B","model_score":0.7154,"opponent_score":0.6034,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1t9NTmRkUatsh4rbKLYr-PRS1_BcyZrwx","option_a_url":"https://lh3.googleusercontent.com/d/1Nz_541o3vcT7lZj8o9mW3X0Uc-83rI6w","option_b_url":"https://lh3.googleusercontent.com/d/1smajNQpoIKBfEq59uzbykNJ60iXrtCRF"},{"question_id":"q083","query_image":"050870.jpg","option_a_image":"098266.jpg","option_b_image":"117069.jpg","correct_side":"A","model_score":0.7258,"opponent_score":0.5492,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1wTSGFF74MITHQ7QX0ouq0mgIbhExz3Rb","option_a_url":"https://lh3.googleusercontent.com/d/1KBRH8MrFJxbJTBgLgo0IUDxThLikBR1U","option_b_url":"https://lh3.googleusercontent.com/d/1JcF72qeySMMgdEM_S19T20Avw7djXx4Y"},{"question_id":"q084","query_image":"162402.jpg","option_a_image":"161927.jpg","option_b_image":"085024.jpg","correct_side":"B","model_score":0.7804,"opponent_score":0.6556,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1Ygth2MshLQMBOCtJbrA-_qT3AgTh335X","option_a_url":"https://lh3.googleusercontent.com/d/1QS26zwdsWTbT68Q9cqBv-WMstHdSO-3Y","option_b_url":"https://lh3.googleusercontent.com/d/1oFYCMl8LCs2z3pipOV3fvxc7B_qJSU52"},{"question_id":"q085","query_image":"072004.jpg","option_a_image":"082602.jpg","option_b_image":"202289.jpg","correct_side":"A","model_score":0.7237,"opponent_score":0.5984,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/11AJONLRXLyWLtfCK9xuiQIK3H9r76fnu","option_a_url":"https://lh3.googleusercontent.com/d/1sEc-4hQsvfYEiBwSdIeMh6sPTAz6PEV9","option_b_url":"https://lh3.googleusercontent.com/d/1fSoWpQwe0Hihta1neo76j-LHmu98qGoN"},{"question_id":"q086","query_image":"014418.jpg","option_a_image":"196898.jpg","option_b_image":"036086.jpg","correct_side":"A","model_score":0.7847,"opponent_score":0.6988,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1Ei_CH-OTdqzj16kdBiYgQr_NSbTvaEUx","option_a_url":"https://lh3.googleusercontent.com/d/1jIbvMnky1dGnXAVJe9jHbOcYnF6q__zX","option_b_url":"https://lh3.googleusercontent.com/d/1dgs9-34p6eL0X6cp61B49296tjL7SgAs"},{"question_id":"q087","query_image":"084564.jpg","option_a_image":"104061.jpg","option_b_image":"112656.jpg","correct_side":"A","model_score":0.6939,"opponent_score":0.5301,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1EmvXzAEeya9SsTF7EcFHsXvEVc3ZO1Qf","option_a_url":"https://lh3.googleusercontent.com/d/1O-Ovd5e06I0g1TtwfD03HnT5OgMVTdHE","option_b_url":"https://lh3.googleusercontent.com/d/1oMFtF55i9fGcKfAipMcOaub0XV-LzWR_"},{"question_id":"q088","query_image":"026315.jpg","option_a_image":"188830.jpg","option_b_image":"109367.jpg","correct_side":"A","model_score":0.7581,"opponent_score":0.5841,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1aRMFnU15VyJdsuws-84PmaBKVBjKV-Vf","option_a_url":"https://lh3.googleusercontent.com/d/19D2Gg3X5Qf2PGTNBxaAYfQVxbSeqgPRd","option_b_url":"https://lh3.googleusercontent.com/d/1c2YXRKU5tRrHUu5Q3aLdmVFY4SsFZrMz"},{"question_id":"q089","query_image":"060920.jpg","option_a_image":"171405.jpg","option_b_image":"062949.jpg","correct_side":"B","model_score":0.7297,"opponent_score":0.5995,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1TD99g46Nr76U1yslKtPjlXNri2DznXOZ","option_a_url":"https://lh3.googleusercontent.com/d/1O89sJFzKh4W--iGbKUr4m4-_5ylNYFS9","option_b_url":"https://lh3.googleusercontent.com/d/1BpXCqE_o0dd2MKFkfRFGT_CEKG-Hmp31"},{"question_id":"q090","query_image":"059142.jpg","option_a_image":"135472.jpg","option_b_image":"104642.jpg","correct_side":"A","model_score":0.8169,"opponent_score":0.6637,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1UnORs9jCliTN11GBTUlUDyd3mQVNCWw8","option_a_url":"https://lh3.googleusercontent.com/d/1Xsx-avDDi7HU-9FXMAZym3M4H8fGxb-9","option_b_url":"https://lh3.googleusercontent.com/d/1imcPBLttqfzNviPvG1T99yIWU41dimhP"},{"question_id":"q091","query_image":"029425.jpg","option_a_image":"082602.jpg","option_b_image":"120601.jpg","correct_side":"A","model_score":0.7477,"opponent_score":0.641,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1Urmw3-F3Z2b659NbDgSbzI0Q6KZI9CLu","option_a_url":"https://lh3.googleusercontent.com/d/1sEc-4hQsvfYEiBwSdIeMh6sPTAz6PEV9","option_b_url":"https://lh3.googleusercontent.com/d/1o4JBlo6XzVeOfYnm5EKgWjtwjJ0250iy"},{"question_id":"q092","query_image":"036159.jpg","option_a_image":"076900.jpg","option_b_image":"187691.jpg","correct_side":"A","model_score":0.7231,"opponent_score":0.6495,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1WaDvaCQ9vNGe__twPGXx8jhs_S7ycXd-","option_a_url":"https://lh3.googleusercontent.com/d/1smajNQpoIKBfEq59uzbykNJ60iXrtCRF","option_b_url":"https://lh3.googleusercontent.com/d/1Lcv4Pi12-s-hsjPMzE7M5f3stC1Yyo3k"},{"question_id":"q093","query_image":"110693.jpg","option_a_image":"035005.jpg","option_b_image":"167274.jpg","correct_side":"A","model_score":0.7084,"opponent_score":0.4777,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1As4ylFIM9qQdv7FJTNq6tg5ID680Lq5c","option_a_url":"https://lh3.googleusercontent.com/d/1E701RonMbLgFGxkUY__pBikXfWlF3vGy","option_b_url":"https://lh3.googleusercontent.com/d/1YU8IiAc04BlRCr4Ep6ZqqPzpRqQ33Pip"},{"question_id":"q094","query_image":"027231.jpg","option_a_image":"012217.jpg","option_b_image":"174279.jpg","correct_side":"A","model_score":0.659,"opponent_score":0.5512,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1Q9HdBHweq8seSyuhR-gtcycxamSMApaU","option_a_url":"https://lh3.googleusercontent.com/d/1Vd2u9j6hSc1XzDLmxSylNmbK5rWrlBJ1","option_b_url":"https://lh3.googleusercontent.com/d/15GZxDol3VXa-fB4jNeIPLRm40d55XA8P"},{"question_id":"q095","query_image":"036054.jpg","option_a_image":"059789.jpg","option_b_image":"035062.jpg","correct_side":"B","model_score":0.7371,"opponent_score":0.6535,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1NobvB5SNK0pEFTI35UlSNeb7w-C3G5k9","option_a_url":"https://lh3.googleusercontent.com/d/1H0daKNJUsSs-eUXMJ4wZ78cG91Ai7fAX","option_b_url":"https://lh3.googleusercontent.com/d/1Na2EF2FOFejpce703lrGMB-HcWWBvRim"},{"question_id":"q096","query_image":"200899.jpg","option_a_image":"143273.jpg","option_b_image":"073446.jpg","correct_side":"A","model_score":0.6531,"opponent_score":0.5387,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1gnmSZ3oqbLyHJEXXtYIM2EPGynlgwyUZ","option_a_url":"https://lh3.googleusercontent.com/d/1cQiOAJMweOnOxO_QlBRqzwydVHW6fUPN","option_b_url":"https://lh3.googleusercontent.com/d/1yCup8sVjNYm7N76UULb7R5TELOEfmpr4"},{"question_id":"q097","query_image":"116667.jpg","option_a_image":"191473.jpg","option_b_image":"050007.jpg","correct_side":"A","model_score":0.6237,"opponent_score":0.5492,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1K4JE2x_i26q7qcQk291V-7VvGUpHIh13","option_a_url":"https://lh3.googleusercontent.com/d/1MPiJfWG4xK0XCbYr1o98BY12U8vkXEqd","option_b_url":"https://lh3.googleusercontent.com/d/1PbrlrcIoFVB8xnm6pV1FtKtx1BI6AvK_"},{"question_id":"q098","query_image":"097613.jpg","option_a_image":"090103.jpg","option_b_image":"084673.jpg","correct_side":"B","model_score":0.7397,"opponent_score":0.6501,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1kjjLsYdNlQxyZAu9XCpKgykZJF0s3_zF","option_a_url":"https://lh3.googleusercontent.com/d/1H56g88h4IbjET424iO8cQWsWslHk7r_j","option_b_url":"https://lh3.googleusercontent.com/d/1Sa3L18u2NEZFptOW0TqlB4c3Aine1kHK"},{"question_id":"q099","query_image":"116641.jpg","option_a_image":"126335.jpg","option_b_image":"184557.jpg","correct_side":"B","model_score":0.6427,"opponent_score":0.4998,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1LCK2dFmC5pG8xlTqsUwwN9yKCSALI_ew","option_a_url":"https://lh3.googleusercontent.com/d/1Wcvve54GrfjiMZFx_sRXOjaU3d5pLtuN","option_b_url":"https://lh3.googleusercontent.com/d/15WF9g6lcQ6aIkaWcThjSf3cAzkKjECnY"},{"question_id":"q100","query_image":"063291.jpg","option_a_image":"061512.jpg","option_b_image":"133912.jpg","correct_side":"B","model_score":0.726,"opponent_score":0.6115,"opponent_rank":20,"query_url":"https://lh3.googleusercontent.com/d/1t93dR5A_UiFQowQQhPsWUFZln1olFH9C","option_a_url":"https://lh3.googleusercontent.com/d/1G1t3aNaAVR_0KnF0TL3olDC3kjFK3U5O","option_b_url":"https://lh3.googleusercontent.com/d/1yr54Z9LzE_t4LjwijK0wtwZMJhjhgAyC"}];
+const NUM_QUESTIONS_PER_ROUND = 10;
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxBIiFhcR4y-SMMvKelwR-PiI5iCsl-OGbFI9eJVxtf5zDuT-OiCZtNgzh8PU3drYsY/exec";
+const STORAGE_KEY_ANSWERED = 'llm_v2_answered_question_ids';
+const STORAGE_KEY_ROUND    = 'llm_v2_round_number';
+const STORAGE_KEY_DEVICE   = 'llm_v2_device_id';
+
+let myQuestions = [];
+let currentIndex = 0;
+let currentSelection = null;
+let deviceId = null;
+let sessionId = null;
+let roundNumber = 1;
+
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getDeviceId() {
+  let id = localStorage.getItem(STORAGE_KEY_DEVICE);
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(STORAGE_KEY_DEVICE, id);
+  }
+  return id;
+}
+
+function generateSessionId() {
+  return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function getAnsweredIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ANSWERED);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function saveAnsweredIds(ids) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ANSWERED, JSON.stringify(ids));
+  } catch (e) {}
+}
+
+function getRoundNumber() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROUND);
+    return raw ? parseInt(raw, 10) : 1;
+  } catch (e) { return 1; }
+}
+
+function saveRoundNumber(n) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ROUND, String(n));
+  } catch (e) {}
+}
+
+function init() {
+  deviceId = getDeviceId();
+  roundNumber = getRoundNumber();
+  renderIntro();
+}
+
+function renderIntro() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="intro-screen">
+      <h2>مرحباً بك</h2>
+      <p>
+        سيتم عرض ${NUM_QUESTIONS_PER_ROUND} أسئلة بسيطة عليك.<br>
+        يحتوي كل سؤال على صورة لشخص، وصورتين لشخصين آخرين (أ وب).<br>
+        يُرجى اختيار الشخص الأكثر تشابهاً بصرياً مع الشخص الظاهر في الصورة الأولى.<br>
+        وفي حال عدم وضوح التشابه، أو تشابه كليهما معه، تتوفر خيارات إضافية لذلك.
+      </p>
+      <button class="start-btn" onclick="startQuiz()">ابدأ التقييم</button>
+    </div>
+  `;
+}
+
+function startQuiz() {
+  sessionId = generateSessionId();
+  const answeredIds = getAnsweredIds();
+  const availableQuestions = ALL_QUESTIONS.filter(q => !answeredIds.includes(q.question_id));
+
+  if (availableQuestions.length === 0) {
+    renderNoMoreQuestions();
+    return;
+  }
+
+  const shuffledIds = shuffle(availableQuestions.map(q => q.question_id));
+  const selectedIds = shuffledIds.slice(0, NUM_QUESTIONS_PER_ROUND);
+  myQuestions = selectedIds.map(qid => ALL_QUESTIONS.find(q => q.question_id === qid));
+  currentIndex = 0;
+  renderQuestion();
+}
+
+function renderNoMoreQuestions() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="thank-you">
+      <div class="checkmark">🙏</div>
+      <h2>شكراً جزيلاً</h2>
+      <p>لقد قمت بالإجابة على جميع الأسئلة المتاحة حالياً.<br>نقدّر وقتك ومساهمتك القيّمة.</p>
+    </div>
+  `;
+}
+
+function renderQuestion() {
+  const q = myQuestions[currentIndex];
+  currentSelection = null;
+
+  const app = document.getElementById('app');
+  const progressPct = Math.round((currentIndex / myQuestions.length) * 100);
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+    <div class="progress-text">السؤال ${currentIndex + 1} من ${myQuestions.length}</div>
+
+    <div class="query-section">
+      <div class="query-label">هذا الشخص 👇</div>
+      <img class="query-img" src="${q.query_url}" alt="query" />
+    </div>
+
+    <div class="question-text">من الأكثر تشابهاً معه من بين الاثنين؟</div>
+
+    <div class="options-row">
+      <div class="option-card" id="optA" onclick="selectOption('A')">
+        <img src="${q.option_a_url}" alt="الخيار أ" />
+        <div class="option-label">أ</div>
+      </div>
+      <div class="option-card" id="optB" onclick="selectOption('B')">
+        <img src="${q.option_b_url}" alt="الخيار ب" />
+        <div class="option-label">ب</div>
+      </div>
+    </div>
+
+    <div class="extra-options">
+      <button class="neither-btn" id="optNeither" onclick="selectOption('neither')">
+        لا أحد منهما يشبهه / غير متأكد
+      </button>
+      <button class="both-btn" id="optBoth" onclick="selectOption('both')">
+        كلاهما يشبهه
+      </button>
+    </div>
+
+    <button class="next-btn" id="nextBtn" onclick="submitAnswer()">التالي</button>
+    <div class="sending-note" id="sendingNote"></div>
+  `;
+}
+
+function selectOption(choice) {
+  currentSelection = choice;
+  document.getElementById('optA').classList.toggle('selected', choice === 'A');
+  document.getElementById('optB').classList.toggle('selected', choice === 'B');
+  document.getElementById('optNeither').classList.toggle('selected', choice === 'neither');
+  document.getElementById('optBoth').classList.toggle('selected', choice === 'both');
+  document.getElementById('nextBtn').classList.add('enabled');
+}
+
+function submitAnswer() {
+  if (!currentSelection) return;
+
+  const q = myQuestions[currentIndex];
+  // اختيار "كلاهما يشبهه" يُسجَّل كتحقق صحيح لاختيار النموذج (true)
+  const isModelCorrect = (currentSelection === q.correct_side) || (currentSelection === 'both');
+
+  const response = {
+    question_id: q.question_id,
+    user_choice: currentSelection,
+    correct_side: q.correct_side,
+    model_was_chosen: isModelCorrect,
+    model_score: q.model_score,
+    opponent_score: q.opponent_score,
+    opponent_rank: q.opponent_rank,
+    device_id: deviceId,
+    session_id: sessionId,
+    round_number: roundNumber,
+  };
+
+  const nextBtn = document.getElementById('nextBtn');
+  const note = document.getElementById('sendingNote');
+  nextBtn.disabled = true;
+  if (note) note.textContent = 'جارٍ الحفظ...';
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(response),
+  }).catch(() => {}).finally(() => {
+    const answeredIds = getAnsweredIds();
+    if (!answeredIds.includes(q.question_id)) {
+      answeredIds.push(q.question_id);
+      saveAnsweredIds(answeredIds);
+    }
+
+    currentIndex++;
+    if (currentIndex >= myQuestions.length) {
+      roundNumber++;
+      saveRoundNumber(roundNumber);
+      renderThankYou();
+    } else {
+      renderQuestion();
+    }
+  });
+}
+
+function renderThankYou() {
+  const answeredIds = getAnsweredIds();
+  const remainingCount = ALL_QUESTIONS.filter(q => !answeredIds.includes(q.question_id)).length;
+
+  const app = document.getElementById('app');
+  const continueSection = remainingCount > 0
+    ? `<button class="continue-btn" onclick="startQuiz()">أرغب بمتابعة ${Math.min(NUM_QUESTIONS_PER_ROUND, remainingCount)} أسئلة إضافية</button>`
+    : `<p class="no-more-note">لقد تمت الإجابة على جميع الأسئلة المتاحة. شكراً لمساهمتك الكاملة.</p>`;
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>تقييم التشابه البصري بين الوجوه</h1>
+    </div>
+    <div class="thank-you">
+      <div class="checkmark">✅</div>
+      <h2>شكراً لك</h2>
+      <p>تم تسجيل إجاباتك بنجاح.<br>نقدّر وقتك ومساهمتك القيّمة.</p>
+      ${continueSection}
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
